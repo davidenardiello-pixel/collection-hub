@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+:root {
+  --background: #060606;
+  --foreground: #faf6ef;
+  --rc-black: #040404;
+  --rc-charcoal: #101010;
+  --rc-surface: #171717;
+  --rc-surface-elevated: #222222;
+  --rc-gold: #d4b06a;
+  --rc-gold-light: #f0e2bc;
+  --rc-gold-dark: #a8843f;
+  --rc-cream: #060606;
+  --rc-cream-dark: #1e1e1e;
+  --rc-ink: #faf6ef;
+  --rc-muted: #b5ad9c;
+  --rc-border: rgba(212, 176, 106, 0.38);
+  --rc-shadow: 0 22px 55px rgba(0, 0, 0, 0.55);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-rc-black: var(--rc-black);
+  --color-rc-charcoal: var(--rc-charcoal);
+  --color-rc-surface: var(--rc-surface);
+  --color-rc-surface-elevated: var(--rc-surface-elevated);
+  --color-rc-gold: var(--rc-gold);
+  --color-rc-gold-light: var(--rc-gold-light);
+  --color-rc-gold-dark: var(--rc-gold-dark);
+  --color-rc-cream: var(--rc-cream);
+  --color-rc-cream-dark: var(--rc-cream-dark);
+  --color-rc-ink: var(--rc-ink);
+  --color-rc-muted: var(--rc-muted);
+  --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-cormorant);
+  --font-script: var(--font-great-vibes);
+}
+
+body {
+  background: var(--rc-cream);
+  color: var(--rc-ink);
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(212, 176, 106, 0.45);
+  color: #fff;
+}
+
+.rc-card {
+  border: 1px solid var(--rc-border);
+  background: var(--rc-surface);
+  box-shadow: var(--rc-shadow);
+}
+
+.rc-gold-gradient {
+  background: linear-gradient(135deg, #f0e2bc 0%, #d4b06a 42%, #a8843f 100%);
+}
+
+.rc-header-pattern {
+  background:
+    radial-gradient(circle at top right, rgba(212, 176, 106, 0.18), transparent 45%),
+    radial-gradient(circle at bottom left, rgba(212, 176, 106, 0.08), transparent 35%),
+    linear-gradient(180deg, #141414 0%, #060606 100%);
+}
+
+.rc-main-pattern {
+  background:
+    radial-gradient(circle at 20% 0%, rgba(212, 176, 106, 0.07), transparent 30%),
+    radial-gradient(circle at 80% 100%, rgba(212, 176, 106, 0.05), transparent 35%),
+    var(--rc-cream);
+}
+
+.rc-script {
+  font-family: var(--font-great-vibes), cursive;
+  text-shadow: 0 2px 18px rgba(212, 176, 106, 0.35);
+}
+
+.rc-brand-collection {
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  letter-spacing: 0.32em;
+}
+
+.rc-logo-frame {
+  border: 2px solid rgba(212, 176, 106, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(212, 176, 106, 0.15),
+    0 12px 32px rgba(0, 0, 0, 0.5);
+}

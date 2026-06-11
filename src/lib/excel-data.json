@@ -1,0 +1,2459 @@
+{
+  "bookings": [
+    {
+      "description": "Totale booking",
+      "propertyId": "regina-cappellari",
+      "platformId": "booking",
+      "checkIn": "2026-01-01",
+      "checkOut": "2026-01-20",
+      "grossIncome": 2213.41,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale Diretto",
+      "propertyId": "regina-cappellari",
+      "platformId": "diretta",
+      "checkIn": "2026-01-20",
+      "checkOut": "2026-01-24",
+      "grossIncome": 1000.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale Airbnb",
+      "propertyId": "regina-cappellari",
+      "platformId": "airbnb",
+      "checkIn": "2026-01-25",
+      "checkOut": "2026-01-31",
+      "grossIncome": 575.9,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale booking",
+      "propertyId": "re-di-roma",
+      "platformId": "booking",
+      "checkIn": "2026-01-01",
+      "checkOut": "2026-01-08",
+      "grossIncome": 1020.39,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale Diretta",
+      "propertyId": "re-di-roma",
+      "platformId": "diretta",
+      "checkIn": "2026-01-08",
+      "checkOut": "2026-01-31",
+      "grossIncome": 2200.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale Airbnb",
+      "propertyId": "palombini",
+      "platformId": "airbnb",
+      "checkIn": "2026-01-13",
+      "checkOut": "2026-01-19",
+      "grossIncome": 827.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale Airbnb",
+      "propertyId": "palombini",
+      "platformId": "airbnb",
+      "checkIn": "2026-01-19",
+      "checkOut": "2026-01-22",
+      "grossIncome": 346.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale Airbnb",
+      "propertyId": "palombini",
+      "platformId": "airbnb",
+      "checkIn": "2026-01-24",
+      "checkOut": "2026-01-27",
+      "grossIncome": 280.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale Diretto",
+      "propertyId": "palombini",
+      "platformId": "diretta",
+      "checkIn": "2026-01-12",
+      "checkOut": "2026-01-13",
+      "grossIncome": 100.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale Airbnb",
+      "propertyId": "palombini",
+      "platformId": "airbnb",
+      "checkIn": "2026-02-01",
+      "checkOut": "2026-02-05",
+      "grossIncome": 326.6,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale Airbnb",
+      "propertyId": "palombini",
+      "platformId": "airbnb",
+      "checkIn": "2026-02-10",
+      "checkOut": "2026-02-21",
+      "grossIncome": 1036.7,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale Airbnb",
+      "propertyId": "palombini",
+      "platformId": "airbnb",
+      "checkIn": "2026-02-22",
+      "checkOut": "2026-02-26",
+      "grossIncome": 359.9,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Diretta",
+      "propertyId": "palombini",
+      "platformId": "airbnb",
+      "checkIn": "2026-02-05",
+      "checkOut": "2026-02-08",
+      "grossIncome": 400.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Booking",
+      "propertyId": "cipro",
+      "platformId": "booking",
+      "checkIn": "2026-01-01",
+      "checkOut": "2026-01-07",
+      "grossIncome": 1274.22,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale Airbnb",
+      "propertyId": "cipro",
+      "platformId": "airbnb",
+      "checkIn": "2026-01-07",
+      "checkOut": "2026-01-10",
+      "grossIncome": 309.76,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale Airbnb",
+      "propertyId": "cipro",
+      "platformId": "airbnb",
+      "checkIn": "2026-01-10",
+      "checkOut": "2026-01-12",
+      "grossIncome": 176.92,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale Airbnb",
+      "propertyId": "cipro",
+      "platformId": "airbnb",
+      "checkIn": "2026-01-12",
+      "checkOut": "2026-01-16",
+      "grossIncome": 394.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Diretta",
+      "propertyId": "cipro",
+      "platformId": "diretta",
+      "checkIn": "2026-01-15",
+      "checkOut": "2026-01-31",
+      "grossIncome": 1760.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale",
+      "propertyId": "mistangelo",
+      "platformId": "booking",
+      "checkIn": "2026-01-01",
+      "checkOut": "2026-01-15",
+      "grossIncome": 1655.82,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale",
+      "propertyId": "mistangelo",
+      "platformId": "airbnb",
+      "checkIn": "2026-01-16",
+      "checkOut": "2026-01-30",
+      "grossIncome": 946.97,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "porto-fluviale",
+      "platformId": "booking",
+      "checkIn": "2026-01-01",
+      "checkOut": "2026-01-15",
+      "grossIncome": 718.8,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "porto-fluviale",
+      "platformId": "airbnb",
+      "checkIn": "2026-01-16",
+      "checkOut": "2026-01-30",
+      "grossIncome": 1350.42,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "regina-cappellari",
+      "platformId": "booking",
+      "checkIn": "2026-02-01",
+      "checkOut": "2026-02-21",
+      "grossIncome": 3833.57,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "regina-cappellari",
+      "platformId": "airbnb",
+      "checkIn": "2026-02-21",
+      "checkOut": "2026-02-25",
+      "grossIncome": 341.97,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "re-di-roma",
+      "platformId": "booking",
+      "checkIn": "2026-02-02",
+      "checkOut": "2026-02-28",
+      "grossIncome": 1862.05,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "cipro",
+      "platformId": "airbnb",
+      "checkIn": "2026-02-18",
+      "checkOut": "2026-02-23",
+      "grossIncome": 451.61,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "cipro",
+      "platformId": "airbnb",
+      "checkIn": "2026-02-23",
+      "checkOut": "2026-02-27",
+      "grossIncome": 454.98,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "cipro",
+      "platformId": "diretta",
+      "checkIn": "2026-02-01",
+      "checkOut": "2026-02-16",
+      "grossIncome": 1650.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "cipro",
+      "platformId": "airbnb",
+      "checkIn": "2026-02-17",
+      "checkOut": "2026-02-19",
+      "grossIncome": 234.5,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "porto-fluviale",
+      "platformId": "booking",
+      "checkIn": "2026-02-01",
+      "checkOut": "2026-02-16",
+      "grossIncome": 1879.77,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "mistangelo",
+      "platformId": "booking",
+      "checkIn": "2026-02-01",
+      "checkOut": "2026-02-16",
+      "grossIncome": 2501.4,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "hallo-claudia",
+      "platformId": "diretta",
+      "checkIn": "2026-01-01",
+      "checkOut": "2026-01-31",
+      "grossIncome": 950.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "hallo-claudia",
+      "platformId": "diretta",
+      "checkIn": "2026-02-01",
+      "checkOut": "2026-02-28",
+      "grossIncome": 820.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale",
+      "propertyId": "cipro",
+      "platformId": "airbnb",
+      "checkIn": "2026-03-01",
+      "checkOut": "2026-03-31",
+      "grossIncome": 3599.81,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "Totale",
+      "propertyId": "cipro",
+      "platformId": "diretta",
+      "checkIn": "2026-03-01",
+      "checkOut": "2026-03-31",
+      "grossIncome": 230.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "regina-cappellari",
+      "platformId": "airbnb",
+      "checkIn": "2026-03-01",
+      "checkOut": "2026-03-31",
+      "grossIncome": 721.63,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "regina-cappellari",
+      "platformId": "booking",
+      "checkIn": "2026-03-01",
+      "checkOut": "2026-03-31",
+      "grossIncome": 3445.66,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "regina-cappellari",
+      "platformId": "booking",
+      "checkIn": "2026-03-01",
+      "checkOut": "2026-03-31",
+      "grossIncome": 1223.14,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "re-di-roma",
+      "platformId": "airbnb",
+      "checkIn": "2026-03-01",
+      "checkOut": "2026-03-31",
+      "grossIncome": 1223.14,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "re-di-roma",
+      "platformId": "vrbo",
+      "checkIn": "2026-03-01",
+      "checkOut": "2026-03-31",
+      "grossIncome": 630.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "re-di-roma",
+      "platformId": "diretta",
+      "checkIn": "2026-03-01",
+      "checkOut": "2026-03-31",
+      "grossIncome": 800.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "mistangelo",
+      "platformId": "booking",
+      "checkIn": "2026-03-01",
+      "checkOut": "2026-03-31",
+      "grossIncome": 4123.03,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "mistangelo",
+      "platformId": "airbnb",
+      "checkIn": "2026-03-01",
+      "checkOut": "2026-03-31",
+      "grossIncome": 892.55,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "porto-fluviale",
+      "platformId": "booking",
+      "checkIn": "2026-03-01",
+      "checkOut": "2026-03-31",
+      "grossIncome": 3704.76,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "porto-fluviale",
+      "platformId": "airbnb",
+      "checkIn": "2026-03-01",
+      "checkOut": "2026-03-31",
+      "grossIncome": 1552.86,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "palombini",
+      "platformId": "airbnb",
+      "checkIn": "2026-03-01",
+      "checkOut": "2026-03-31",
+      "grossIncome": 1923.97,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "palombini",
+      "platformId": "diretta",
+      "checkIn": "2026-03-01",
+      "checkOut": "2026-03-31",
+      "grossIncome": 1060.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "regina-cappellari",
+      "platformId": "booking",
+      "checkIn": "2026-04-01",
+      "checkOut": "2026-04-30",
+      "grossIncome": 3914.43,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "regina-cappellari",
+      "platformId": "airbnb",
+      "checkIn": "2026-04-01",
+      "checkOut": "2026-04-30",
+      "grossIncome": 2253.61,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "regina-cappellari",
+      "platformId": "diretta",
+      "checkIn": "2026-04-01",
+      "checkOut": "2026-04-30",
+      "grossIncome": 1100.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "re-di-roma",
+      "platformId": "booking",
+      "checkIn": "2026-04-01",
+      "checkOut": "2026-04-30",
+      "grossIncome": 1546.37,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "re-di-roma",
+      "platformId": "vrbo",
+      "checkIn": "2026-04-01",
+      "checkOut": "2026-04-30",
+      "grossIncome": 2139.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "re-di-roma",
+      "platformId": "diretta",
+      "checkIn": "2026-04-01",
+      "checkOut": "2026-04-30",
+      "grossIncome": 150.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "palombini",
+      "platformId": "booking",
+      "checkIn": "2026-04-01",
+      "checkOut": "2026-04-30",
+      "grossIncome": 1002.13,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "palombini",
+      "platformId": "diretta",
+      "checkIn": "2026-04-01",
+      "checkOut": "2026-04-30",
+      "grossIncome": 2460.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "mistangelo",
+      "platformId": "booking",
+      "checkIn": "2026-04-01",
+      "checkOut": "2026-04-30",
+      "grossIncome": 4702.68,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "mistangelo",
+      "platformId": "airbnb",
+      "checkIn": "2026-04-01",
+      "checkOut": "2026-04-30",
+      "grossIncome": 1161.02,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "cipro",
+      "platformId": "airbnb",
+      "checkIn": "2026-04-01",
+      "checkOut": "2026-04-30",
+      "grossIncome": 3203.24,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "cipro",
+      "platformId": "diretta",
+      "checkIn": "2026-04-01",
+      "checkOut": "2026-04-30",
+      "grossIncome": 1120.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "porto-fluviale",
+      "platformId": "booking",
+      "checkIn": "2026-04-01",
+      "checkOut": "2026-04-30",
+      "grossIncome": 2184.11,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "porto-fluviale",
+      "platformId": "airbnb",
+      "checkIn": "2026-04-01",
+      "checkOut": "2026-04-30",
+      "grossIncome": 2516.79,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "porto-fluviale",
+      "platformId": "diretta",
+      "checkIn": "2026-04-01",
+      "checkOut": "2026-04-30",
+      "grossIncome": 1220.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "regina-cappellari",
+      "platformId": "booking",
+      "checkIn": "2026-05-01",
+      "checkOut": "2026-05-31",
+      "grossIncome": 7156.56,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "regina-cappellari",
+      "platformId": "airbnb",
+      "checkIn": "2026-05-01",
+      "checkOut": "2026-05-31",
+      "grossIncome": 795.14,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "cipro",
+      "platformId": "booking",
+      "checkIn": "2026-05-01",
+      "checkOut": "2026-05-31",
+      "grossIncome": 354.56,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "cipro",
+      "platformId": "airbnb",
+      "checkIn": "2026-05-01",
+      "checkOut": "2026-05-31",
+      "grossIncome": 978.18,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "cipro",
+      "platformId": "diretta",
+      "checkIn": "2026-05-01",
+      "checkOut": "2026-05-31",
+      "grossIncome": 2130.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "palombini",
+      "platformId": "diretta",
+      "checkIn": "2026-05-01",
+      "checkOut": "2026-05-31",
+      "grossIncome": 2150.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "re-di-roma",
+      "platformId": "booking",
+      "checkIn": "2026-05-01",
+      "checkOut": "2026-05-31",
+      "grossIncome": 277.25,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "re-di-roma",
+      "platformId": "vrbo",
+      "checkIn": "2026-05-01",
+      "checkOut": "2026-05-31",
+      "grossIncome": 2160.22,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "re-di-roma",
+      "platformId": "rome-collection",
+      "checkIn": "2026-05-01",
+      "checkOut": "2026-05-31",
+      "grossIncome": 680.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "porto-fluviale",
+      "platformId": "booking",
+      "checkIn": "2026-05-01",
+      "checkOut": "2026-05-31",
+      "grossIncome": 2246.66,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "porto-fluviale",
+      "platformId": "airbnb",
+      "checkIn": "2026-05-01",
+      "checkOut": "2026-05-31",
+      "grossIncome": 3818.02,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "porto-fluviale",
+      "platformId": "diretta",
+      "checkIn": "2026-05-01",
+      "checkOut": "2026-05-31",
+      "grossIncome": 1200.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "gregorio-vii",
+      "platformId": "booking",
+      "checkIn": "2026-05-01",
+      "checkOut": "2026-05-31",
+      "grossIncome": 6970.82,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "mistangelo",
+      "platformId": "booking",
+      "checkIn": "2026-05-01",
+      "checkOut": "2026-05-31",
+      "grossIncome": 7320.59,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    },
+    {
+      "description": "totale",
+      "propertyId": "mistangelo",
+      "platformId": "diretta",
+      "checkIn": "2026-05-01",
+      "checkOut": "2026-05-31",
+      "grossIncome": 1450.0,
+      "cleaningFee": 0.0,
+      "otaCommission": 0,
+      "legacyIncomeAttribution": true,
+      "importedFromExcel": true
+    }
+  ],
+  "expenses": [
+    {
+      "date": "2026-01-30",
+      "propertyId": "regina-cappellari",
+      "categoryId": "com-airbnb",
+      "description": "Totale commisioni",
+      "amount": 88.67,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "regina-cappellari",
+      "categoryId": "affitto",
+      "description": "Affitto",
+      "amount": 2550.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "regina-cappellari",
+      "categoryId": "wifi",
+      "description": "Internet",
+      "amount": 33.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "regina-cappellari",
+      "categoryId": "utenze",
+      "description": "Corrente",
+      "amount": 120.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "regina-cappellari",
+      "categoryId": "pulizie",
+      "description": "Piero",
+      "amount": 239.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "regina-cappellari",
+      "categoryId": "iva",
+      "description": "totale",
+      "amount": 278.93,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "regina-cappellari",
+      "categoryId": "lavanderia",
+      "description": "Totale",
+      "amount": 99.8,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "regina-cappellari",
+      "categoryId": "krossbooking",
+      "description": "Totale",
+      "amount": 30.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "regina-cappellari",
+      "categoryId": "revenue-management",
+      "description": "Totale",
+      "amount": 50.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "re-di-roma",
+      "categoryId": "com-booking",
+      "description": "Totale",
+      "amount": 198.98,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "re-di-roma",
+      "categoryId": "affitto",
+      "description": "Totale",
+      "amount": 1500.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "re-di-roma",
+      "categoryId": "utenze",
+      "description": "Corrente",
+      "amount": 140.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "re-di-roma",
+      "categoryId": "pulizie",
+      "description": "Piero",
+      "amount": 146.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "re-di-roma",
+      "categoryId": "condominio",
+      "description": "Riscaldamento",
+      "amount": 100.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "re-di-roma",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 30.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "re-di-roma",
+      "categoryId": "revenue-management",
+      "description": "totale",
+      "amount": 50.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "re-di-roma",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 99.8,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "palombini",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 1600.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "palombini",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 150.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "palombini",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 99.8,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "palombini",
+      "categoryId": "utenze",
+      "description": "Corrente",
+      "amount": 569.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "palombini",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 30.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "palombini",
+      "categoryId": "revenue-management",
+      "description": "totale",
+      "amount": 25.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "palombini",
+      "categoryId": "com-airbnb",
+      "description": "totale",
+      "amount": 225.92,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "palombini",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 1600.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "palombini",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 150.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "palombini",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 30.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "palombini",
+      "categoryId": "revenue-management",
+      "description": "totale",
+      "amount": 25.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "palombini",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 88.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "palombini",
+      "categoryId": "utenze",
+      "description": "Corrente",
+      "amount": 173.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "palombini",
+      "categoryId": "com-airbnb",
+      "description": "totale",
+      "amount": 266.49,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "cipro",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 1700.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "cipro",
+      "categoryId": "com-airbnb",
+      "description": "totale",
+      "amount": 161.16,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "cipro",
+      "categoryId": "com-booking",
+      "description": "totale",
+      "amount": 248.47,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "cipro",
+      "categoryId": "wifi",
+      "description": "tot",
+      "amount": 21.5,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "cipro",
+      "categoryId": "pulizie",
+      "description": "tot",
+      "amount": 160.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "cipro",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 88.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "cipro",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 30.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "cipro",
+      "categoryId": "revenue-management",
+      "description": "totale",
+      "amount": 25.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "cipro",
+      "categoryId": "utenze",
+      "description": "Corrente",
+      "amount": 136.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "mistangelo",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 450.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "mistangelo",
+      "categoryId": "utenze",
+      "description": "totale",
+      "amount": 371.48,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "mistangelo",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 1558.34,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "porto-fluviale",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 225.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "porto-fluviale",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 83.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "porto-fluviale",
+      "categoryId": "utenze",
+      "description": "totale",
+      "amount": 766.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "porto-fluviale",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 1450.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "regina-cappellari",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 2550.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "regina-cappellari",
+      "categoryId": "com-booking",
+      "description": "totale",
+      "amount": 747.55,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "regina-cappellari",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 174.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "regina-cappellari",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 88.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "regina-cappellari",
+      "categoryId": "krossbooking",
+      "description": "Totale",
+      "amount": 30.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "regina-cappellari",
+      "categoryId": "revenue-management",
+      "description": "Totale",
+      "amount": 50.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "regina-cappellari",
+      "categoryId": "utenze",
+      "description": "Corrente",
+      "amount": 200.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "re-di-roma",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 1500.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "re-di-roma",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 62.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "re-di-roma",
+      "categoryId": "utenze",
+      "description": "Corrente",
+      "amount": 111.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "re-di-roma",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 30.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "re-di-roma",
+      "categoryId": "revenue-management",
+      "description": "totale",
+      "amount": 25.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "re-di-roma",
+      "categoryId": "com-booking",
+      "description": "totale",
+      "amount": 363.1,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "cipro",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 1700.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "cipro",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 30.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "cipro",
+      "categoryId": "revenue-management",
+      "description": "totale",
+      "amount": 25.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "cipro",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 88.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "cipro",
+      "categoryId": "utenze",
+      "description": "Corrente",
+      "amount": 213.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "cipro",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 120.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "porto-fluviale",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 1450.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "porto-fluviale",
+      "categoryId": "utenze",
+      "description": "totale",
+      "amount": 761.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "mistangelo",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 1558.34,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "mistangelo",
+      "categoryId": "utenze",
+      "description": "totale",
+      "amount": 619.5,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-01-30",
+      "propertyId": "hallo-claudia",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 390.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-02-28",
+      "propertyId": "hallo-claudia",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 250.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "regina-cappellari",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 2550.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "regina-cappellari",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 284.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "regina-cappellari",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 120.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "regina-cappellari",
+      "categoryId": "krossbooking",
+      "description": "Totale",
+      "amount": 30.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "regina-cappellari",
+      "categoryId": "revenue-management",
+      "description": "Totale",
+      "amount": 50.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "re-di-roma",
+      "categoryId": "com-booking",
+      "description": "totale",
+      "amount": 238.51,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "regina-cappellari",
+      "categoryId": "iva",
+      "description": "totale",
+      "amount": 428.03,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "re-di-roma",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 1500.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "re-di-roma",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 220.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "re-di-roma",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 60.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "mistangelo",
+      "categoryId": "com-booking",
+      "description": "totale",
+      "amount": 803.99,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "mistangelo",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 1558.34,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "mistangelo",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 480.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "mistangelo",
+      "categoryId": "wifi",
+      "description": "totale",
+      "amount": 50.0,
+      "importedFromExcel": true,
+      "notes": "massimo"
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "mistangelo",
+      "categoryId": "manutenzione",
+      "description": "totale",
+      "amount": 40.0,
+      "importedFromExcel": true,
+      "notes": "massimo"
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "com-booking",
+      "description": "totale",
+      "amount": 722.43,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "mistangelo",
+      "categoryId": "iva",
+      "description": "totale",
+      "amount": 412.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 1450.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 210.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 125.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "wifi",
+      "description": "totale",
+      "amount": 20.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "iva",
+      "description": "totale",
+      "amount": 370.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "manutenzione",
+      "description": "totale",
+      "amount": 20.0,
+      "importedFromExcel": true,
+      "notes": "massimo"
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "palombini",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 1600.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "palombini",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 150.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "palombini",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 60.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "palombini",
+      "categoryId": "wifi",
+      "description": "totale",
+      "amount": 26.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "re-di-roma",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 30.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "re-di-roma",
+      "categoryId": "revenue-management",
+      "description": "totale",
+      "amount": 50.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "palombini",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 30.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "palombini",
+      "categoryId": "revenue-management",
+      "description": "totale",
+      "amount": 50.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "mistangelo",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 42.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 42.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "cipro",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 1700.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "cipro",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 315.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "cipro",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 180.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "cipro",
+      "categoryId": "revenue-management",
+      "description": "totale",
+      "amount": 50.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "cipro",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 80.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-03-31",
+      "propertyId": "cipro",
+      "categoryId": "wifi",
+      "description": "totale",
+      "amount": 21.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "regina-cappellari",
+      "categoryId": "com-booking",
+      "description": "totale",
+      "amount": 763.31,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "regina-cappellari",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 2550.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "regina-cappellari",
+      "categoryId": "utenze",
+      "description": "totale",
+      "amount": 140.37,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "regina-cappellari",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 280.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "regina-cappellari",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 88.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "regina-cappellari",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 6.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "regina-cappellari",
+      "categoryId": "revenue-management",
+      "description": "totale",
+      "amount": 30.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "re-di-roma",
+      "categoryId": "com-booking",
+      "description": "totale",
+      "amount": 301.54,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "re-di-roma",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 1500.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "re-di-roma",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 332.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "re-di-roma",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 75.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "re-di-roma",
+      "categoryId": "revenue-management",
+      "description": "totale",
+      "amount": 36.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "palombini",
+      "categoryId": "com-booking",
+      "description": "",
+      "amount": 195.42,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "palombini",
+      "categoryId": "affitto",
+      "description": "",
+      "amount": 1600.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "palombini",
+      "categoryId": "utenze",
+      "description": "corrente",
+      "amount": 220.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "palombini",
+      "categoryId": "pulizie",
+      "description": "",
+      "amount": 200.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "palombini",
+      "categoryId": "lavanderia",
+      "description": "",
+      "amount": 75.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "palombini",
+      "categoryId": "krossbooking",
+      "description": "",
+      "amount": 36.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "mistangelo",
+      "categoryId": "com-booking",
+      "description": "",
+      "amount": 917.02,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "mistangelo",
+      "categoryId": "affitto",
+      "description": "",
+      "amount": 1558.34,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "mistangelo",
+      "categoryId": "utenze",
+      "description": "",
+      "amount": 108.04,
+      "importedFromExcel": true,
+      "notes": "Corrente"
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "mistangelo",
+      "categoryId": "pulizie",
+      "description": "",
+      "amount": 512.0,
+      "importedFromExcel": true,
+      "notes": "32 euro di prodotti inclusi"
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "mistangelo",
+      "categoryId": "iva",
+      "description": "",
+      "amount": 470.27,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "mistangelo",
+      "categoryId": "krossbooking",
+      "description": "",
+      "amount": 6.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "mistangelo",
+      "categoryId": "revenue-management",
+      "description": "",
+      "amount": 30.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "porto-fluviale",
+      "categoryId": "affitto",
+      "description": "",
+      "amount": 1450.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "porto-fluviale",
+      "categoryId": "wifi",
+      "description": "",
+      "amount": 45.9,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "porto-fluviale",
+      "categoryId": "utenze",
+      "description": "",
+      "amount": 97.7,
+      "importedFromExcel": true,
+      "notes": "Corrente"
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "porto-fluviale",
+      "categoryId": "pulizie",
+      "description": "",
+      "amount": 255.0,
+      "importedFromExcel": true,
+      "notes": "35 euro pulizie on top pagate cash"
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "porto-fluviale",
+      "categoryId": "iva",
+      "description": "",
+      "amount": 218.41,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "porto-fluviale",
+      "categoryId": "lavanderia",
+      "description": "",
+      "amount": 120.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "porto-fluviale",
+      "categoryId": "krossbooking",
+      "description": "",
+      "amount": 6.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "porto-fluviale",
+      "categoryId": "revenue-management",
+      "description": "",
+      "amount": 30.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "porto-fluviale",
+      "categoryId": "condominio",
+      "description": "",
+      "amount": 182.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "porto-fluviale",
+      "categoryId": "tassa-rifiuti",
+      "description": "",
+      "amount": 620.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "cipro",
+      "categoryId": "affitto",
+      "description": "",
+      "amount": 1700.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "cipro",
+      "categoryId": "wifi",
+      "description": "",
+      "amount": 25.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "cipro",
+      "categoryId": "utenze",
+      "description": "",
+      "amount": 120.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "cipro",
+      "categoryId": "pulizie",
+      "description": "",
+      "amount": 180.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "cipro",
+      "categoryId": "lavanderia",
+      "description": "",
+      "amount": 94.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "cipro",
+      "categoryId": "krossbooking",
+      "description": "",
+      "amount": 6.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "cipro",
+      "categoryId": "revenue-management",
+      "description": "",
+      "amount": 30.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "cipro",
+      "categoryId": "utenze",
+      "description": "",
+      "amount": 147.1,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-04-29",
+      "propertyId": "cipro",
+      "categoryId": "condominio",
+      "description": "",
+      "amount": 100.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "regina-cappellari",
+      "categoryId": "com-booking",
+      "description": "totale",
+      "amount": 1395.53,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "regina-cappellari",
+      "categoryId": "affitto",
+      "description": "totale",
+      "amount": 2550.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "regina-cappellari",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 382.8,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "regina-cappellari",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 100.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "regina-cappellari",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 60.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "cipro",
+      "categoryId": "com-booking",
+      "description": "",
+      "amount": 69.14,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "cipro",
+      "categoryId": "affitto",
+      "description": "",
+      "amount": 1700.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "cipro",
+      "categoryId": "pulizie",
+      "description": "",
+      "amount": 180.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "cipro",
+      "categoryId": "lavanderia",
+      "description": "",
+      "amount": 94.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "cipro",
+      "categoryId": "revenue-management",
+      "description": "totale",
+      "amount": 50.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "palombini",
+      "categoryId": "affitto",
+      "description": "",
+      "amount": 1600.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "re-di-roma",
+      "categoryId": "com-booking",
+      "description": "",
+      "amount": 54.06,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "re-di-roma",
+      "categoryId": "affitto",
+      "description": "",
+      "amount": 1500.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "re-di-roma",
+      "categoryId": "lavanderia",
+      "description": "totale",
+      "amount": 75.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "re-di-roma",
+      "categoryId": "pulizie",
+      "description": "totale",
+      "amount": 412.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "affitto",
+      "description": "",
+      "amount": 1450.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "wifi",
+      "description": "",
+      "amount": 45.9,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "com-booking",
+      "description": "",
+      "amount": 438.1,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "pulizie",
+      "description": "",
+      "amount": 255.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "lavanderia",
+      "description": "",
+      "amount": 120.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "iva",
+      "description": "",
+      "amount": 204.24,
+      "importedFromExcel": true,
+      "notes": "booking"
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "iva",
+      "description": "",
+      "amount": 415.46,
+      "importedFromExcel": true,
+      "notes": "Airbnb"
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "gregorio-vii",
+      "categoryId": "com-booking",
+      "description": "",
+      "amount": 1359.31,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "gregorio-vii",
+      "categoryId": "iva",
+      "description": "",
+      "amount": 633.71,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "gregorio-vii",
+      "categoryId": "affitto",
+      "description": "",
+      "amount": 1950.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "gregorio-vii",
+      "categoryId": "manutenzione",
+      "description": "",
+      "amount": 350.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "gregorio-vii",
+      "categoryId": "pulizie",
+      "description": "",
+      "amount": 700.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "mistangelo",
+      "categoryId": "iva",
+      "description": "",
+      "amount": 665.51,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "mistangelo",
+      "categoryId": "com-booking",
+      "description": "",
+      "amount": 1427.52,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "mistangelo",
+      "categoryId": "affitto",
+      "description": "",
+      "amount": 1558.34,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "mistangelo",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 42.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "mistangelo",
+      "categoryId": "utenze",
+      "description": "",
+      "amount": 108.04,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "mistangelo",
+      "categoryId": "pulizie",
+      "description": "",
+      "amount": 512.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "gregorio-vii",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 42.0,
+      "importedFromExcel": true
+    },
+    {
+      "date": "2026-05-31",
+      "propertyId": "porto-fluviale",
+      "categoryId": "krossbooking",
+      "description": "totale",
+      "amount": 42.0,
+      "importedFromExcel": true
+    }
+  ]
+}
