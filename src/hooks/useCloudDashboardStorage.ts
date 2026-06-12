@@ -18,6 +18,7 @@ import {
   MAX_PLATFORMS,
 } from "@/lib/constants";
 import { createUniqueId, normalizeDashboardData } from "@/lib/migrate";
+import { removePropertyFromDashboard } from "@/lib/property-removal";
 import {
   getPurgePreview,
   purgeTransactions,
@@ -202,6 +203,9 @@ export function useCloudDashboardStorage(enabled: boolean) {
                 ? saveError.message
                 : "Salvataggio non riuscito.",
             );
+            void fetchDashboard()
+              .then(applyDashboard)
+              .catch(() => undefined);
           })
           .finally(() => {
             savingRef.current = false;
@@ -501,25 +505,9 @@ export function useCloudDashboardStorage(enabled: boolean) {
       let error: string | null = null;
 
       persist((current) => {
-        const inUse =
-          current.bookings.some((booking) => booking.propertyId === id) ||
-          current.expenses.some((expense) => expense.propertyId === id);
-
-        if (inUse) {
-          error =
-            "Non puoi eliminare un appartamento con prenotazioni o spese collegate.";
-          return current;
-        }
-
-        if (current.properties.length <= 1) {
-          error = "Devi mantenere almeno un appartamento.";
-          return current;
-        }
-
-        return {
-          ...current,
-          properties: current.properties.filter((property) => property.id !== id),
-        };
+        const result = removePropertyFromDashboard(current, id);
+        error = result.error;
+        return result.data;
       });
 
       return error;

@@ -11,6 +11,7 @@ import {
   MONTH_LABELS,
 } from "@/lib/constants";
 import type { PurgeScope, PurgePreview } from "@/lib/purge";
+import { countPropertyLinkedTransactions } from "@/lib/property-removal";
 import type {
   Booking,
   DashboardData,
@@ -312,8 +313,26 @@ export function SettingsView({
                   showResult(error, "Appartamento aggiornato.");
                 }}
                 onRemove={() => {
+                  const linked = countPropertyLinkedTransactions(data, property.id);
+                  const hasLinked =
+                    linked.bookings > 0 || linked.expenses > 0;
+
+                  if (
+                    hasLinked &&
+                    !window.confirm(
+                      `Eliminare "${property.name}" e anche ${linked.bookings} prenotazioni e ${linked.expenses} spese collegate?`,
+                    )
+                  ) {
+                    return;
+                  }
+
                   const error = onRemoveProperty(property.id);
-                  showResult(error, "Appartamento eliminato.");
+                  showResult(
+                    error,
+                    hasLinked
+                      ? "Appartamento e movimenti collegati eliminati."
+                      : "Appartamento eliminato.",
+                  );
                 }}
               />
             ))}
