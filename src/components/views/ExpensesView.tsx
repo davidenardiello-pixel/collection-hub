@@ -3,47 +3,61 @@
 import { useMemo, useState } from "react";
 import {
   formatDate,
+  formatCurrency,
   getCategoryMonthlyMatrix,
   groupExpensesByCategory,
+  sumExpenses,
 } from "@/lib/calculations";
 import { isAutomatedExpense } from "@/lib/automation";
 import { isLinkedCommissionExpense } from "@/lib/booking-commission";
 import { isLinkedVatExpense } from "@/lib/booking-vat";
 import { CHART_COLORS } from "@/lib/brand";
 import { FISCAL_YEAR, MONTH_LABELS } from "@/lib/constants";
-import { EMPTY_FILTERS, filterExpenses } from "@/lib/filters";
-import type { Expense, ExpenseCategory, Property } from "@/lib/types";
+import {
+  describeActiveFilters,
+  EMPTY_FILTERS,
+  filterExpenses,
+  groupByProperty,
+} from "@/lib/filters";
+import type { PurgePreview, PurgeScope } from "@/lib/purge";
+import type { Expense, ExpenseCategory, Property, Booking } from "@/lib/types";
 import { ExpenseForm } from "../ExpenseForm";
+import { MonthPropertyPurgeAction } from "../MonthPropertyPurgeAction";
 import { TransactionFilters } from "../TransactionFilters";
-import { BarChart, Button, Card, DataRow, DataTable, EmptyState, Money } from "../ui";
+import {
+  BarChart,
+  Button,
+  Card,
+  DataRow,
+  DataTable,
+  EmptyState,
+  Money,
+} from "../ui";
 
 export function ExpensesView({
   expenses,
+  bookings,
   properties,
   expenseCategories,
   onAdd,
   onUpdate,
   onDuplicate,
   onRemove,
+  onClearTransactions,
 }: {
   expenses: Expense[];
+  bookings: Booking[];
   properties: Property[];
   expenseCategories: ExpenseCategory[];
   onAdd: (expense: Omit<Expense, "id">) => void;
   onUpdate: (id: string, expense: Omit<Expense, "id">) => void;
   onDuplicate: (id: string) => void;
   onRemove: (id: string) => void;
+  onClearTransactions: (scope: PurgeScope) => PurgePreview;
 }) {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [editing, setEditing] = useState<Expense | null>(null);
 
-  const filteredExpenses = useMemo(
-    () => filterExpenses(expenses, filters),
-    [expenses, filters],
-  );
-
-  const matrix = getCategoryMonthlyMatrix(expenses, expenseCategories);
-  const categories = groupExpensesByCategory(expenses, expenseCategories);
   const propertyMap = Object.fromEntries(
     properties.map((property) => [property.id, property.name]),
   );
@@ -51,8 +65,66 @@ export function ExpensesView({
     expenseCategories.map((category) => [category.id, category.name]),
   );
 
+  const filteredExpenses = useMemo(
+    () => filterExpenses(expenses, filters),
+    [expenses, filters],
+  );
+
+  const matrix = getCategoryMonthlyMatrix(filteredExpenses, expenseCategories);
+  const categories = groupExpensesByCategory(filteredExpenses, expenseCategories);
+  const filteredTotal = sumExpenses(filteredExpenses);
+  const activeFilterLabels = describeActiveFilters(filters, {
+    properties: propertyMap,
+    categories: categoryMap,
+  });
+  const groupedExpenses = useMemo(
+    () =>
+      groupByProperty(
+        filteredExpenses,
+        (expense) => expense.propertyId,
+        propertyMap,
+      ),
+    [filteredExpenses, propertyMap],
+  );
+  const showPropertySections =
+    filters.propertyId === "all" && groupedExpenses.length > 1;
+
   return (
     <div className="space-y-6">
+      <Card title="Filtra spese">
+        <p className="mb-4 text-sm text-rc-muted">
+          Restringi per appartamento, mese, categoria o testo. Grafico e matrice
+          seguono gli stessi filtri.
+        </p>
+        <TransactionFilters
+          properties={properties}
+          expenseCategories={expenseCategories}
+          filters={filters}
+          onChange={setFilters}
+        />
+        <div className="mt-4 rounded-xl border border-rc-gold/20 bg-rc-charcoal/40 px-4 py-3 text-sm text-rc-muted">
+          <strong className="text-rc-ink">{filteredExpenses.length}</strong> di{" "}
+          {expenses.length} spese · Totale{" "}
+          <span className="font-semibold text-rc-gold-light">
+            {formatCurrency(filteredTotal)}
+          </span>
+          {activeFilterLabels.length > 0 ? (
+            <span> · {activeFilterLabels.join(" · ")}</span>
+          ) : null}
+        </div>
+        <MonthPropertyPurgeAction
+          filters={filters}
+          bookings={bookings}
+          expenses={expenses}
+          propertyName={
+            filters.propertyId === "all"
+              ? ""
+              : (propertyMap[filters.propertyId] ?? filters.propertyId)
+          }
+          onPurge={onClearTransactions}
+        />
+      </Card>
+
       <ExpenseForm
         key={editing?.id ?? "new"}
         properties={properties}
@@ -69,16 +141,15 @@ export function ExpensesView({
         onCancelEdit={() => setEditing(null)}
       />
 
-      <Card title="Filtri spese">
-        <TransactionFilters
-          properties={properties}
-          filters={filters}
-          onChange={setFilters}
-        />
-      </Card>
-
       <div className="grid gap-6 xl:grid-cols-2">
-        <Card title="Composizione spese">
+        <Card
+          title="Composizione spese"
+          subtitle={
+            activeFilterLabels.length > 0
+              ? activeFilterLabels.join(" · ")
+              : undefined
+          }
+        >
           <BarChart
             items={categories.map((category) => ({
               label: category.name,
@@ -96,31 +167,24 @@ export function ExpensesView({
               "Totale",
             ]}
           >
-                {matrix.map((row) => (
-                  <DataRow key={row.id}>
-                    <td className="px-2 py-2 font-medium">{row.name}</td>
-                    {row.months.map((month) => (
-                      <td key={month.period.month} className="px-2 py-2">
-                        {month.total > 0 ? <Money value={month.total} /> : "—"}
-                      </td>
-                    ))}
-                    <td className="px-2 py-2 font-semibold">
-                      <Money value={row.total} />
-                    </td>
-                  </DataRow>
+            {matrix.map((row) => (
+              <DataRow key={row.id}>
+                <td className="px-2 py-2 font-medium">{row.name}</td>
+                {row.months.map((month) => (
+                  <td key={month.period.month} className="px-2 py-2">
+                    {month.total > 0 ? <Money value={month.total} /> : "—"}
+                  </td>
                 ))}
+                <td className="px-2 py-2 font-semibold">
+                  <Money value={row.total} />
+                </td>
+              </DataRow>
+            ))}
           </DataTable>
         </Card>
       </div>
 
-      <Card
-        title={`Spese FY${FISCAL_YEAR}`}
-        subtitle={
-          filteredExpenses.length !== expenses.length
-            ? `${filteredExpenses.length} di ${expenses.length} visibili`
-            : undefined
-        }
-      >
+      <Card title={`Spese FY${FISCAL_YEAR}`}>
         {filteredExpenses.length === 0 ? (
           <EmptyState
             message={
@@ -130,85 +194,106 @@ export function ExpensesView({
             }
           />
         ) : (
-          <DataTable
-            headers={[
-              "Data",
-              "Proprietà",
-              "Categoria",
-              "Oggetto",
-              "Importo",
-              "",
-            ]}
-          >
-                {filteredExpenses.map((expense) => {
-                  const linkedToBooking =
-                    isLinkedCommissionExpense(expense) ||
-                    isLinkedVatExpense(expense);
+          <div className="space-y-8">
+            {groupedExpenses.map((group) => (
+              <div key={group.propertyId} className="space-y-3">
+                {showPropertySections ? (
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rc-gold/25 pb-2">
+                    <h3 className="font-[family-name:var(--font-cormorant)] text-lg font-semibold text-rc-gold-light">
+                      {group.name}
+                    </h3>
+                    <p className="text-sm text-rc-muted">
+                      {group.items.length} spese ·{" "}
+                      {formatCurrency(sumExpenses(group.items))}
+                    </p>
+                  </div>
+                ) : null}
 
-                  return (
-                  <DataRow key={expense.id}>
-                    <td className="px-2 py-2">{formatDate(expense.date)}</td>
-                    <td className="px-2 py-2">
-                      {propertyMap[expense.propertyId] ?? expense.propertyId}
-                    </td>
-                    <td className="px-2 py-2">
-                      {categoryMap[expense.categoryId] ?? expense.categoryId}
-                    </td>
-                    <td className="px-2 py-2">
-                      <span className="inline-flex flex-wrap items-center gap-2">
-                        {expense.description}
-                        {isAutomatedExpense(expense) ? (
-                          <span className="rounded-full border border-rc-gold/30 bg-rc-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rc-gold-light">
-                            Auto
+                <DataTable
+                  headers={[
+                    "Data",
+                    ...(showPropertySections ? [] : ["Proprietà"]),
+                    "Categoria",
+                    "Oggetto",
+                    "Importo",
+                    "",
+                  ]}
+                >
+                  {group.items.map((expense) => {
+                    const linkedToBooking =
+                      isLinkedCommissionExpense(expense) ||
+                      isLinkedVatExpense(expense);
+
+                    return (
+                      <DataRow key={expense.id}>
+                        <td className="px-2 py-2">{formatDate(expense.date)}</td>
+                        {showPropertySections ? null : (
+                          <td className="px-2 py-2">
+                            {propertyMap[expense.propertyId] ??
+                              expense.propertyId}
+                          </td>
+                        )}
+                        <td className="px-2 py-2">
+                          {categoryMap[expense.categoryId] ?? expense.categoryId}
+                        </td>
+                        <td className="px-2 py-2">
+                          <span className="inline-flex flex-wrap items-center gap-2">
+                            {expense.description}
+                            {isAutomatedExpense(expense) ? (
+                              <span className="rounded-full border border-rc-gold/30 bg-rc-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rc-gold-light">
+                                Auto
+                              </span>
+                            ) : null}
+                            {isLinkedVatExpense(expense) ? (
+                              <span className="rounded-full border border-violet-400/30 bg-violet-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200">
+                                IVA auto
+                              </span>
+                            ) : null}
+                            {isLinkedCommissionExpense(expense) ? (
+                              <span className="rounded-full border border-sky-400/30 bg-sky-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-200">
+                                Da incasso
+                              </span>
+                            ) : null}
                           </span>
-                        ) : null}
-                        {isLinkedVatExpense(expense) ? (
-                          <span className="rounded-full border border-violet-400/30 bg-violet-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200">
-                            IVA auto
-                          </span>
-                        ) : null}
-                        {isLinkedCommissionExpense(expense) ? (
-                          <span className="rounded-full border border-sky-400/30 bg-sky-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-200">
-                            Da incasso
-                          </span>
-                        ) : null}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 font-medium">
-                      <Money value={expense.amount} />
-                    </td>
-                    <td className="px-2 py-2">
-                      {linkedToBooking ? (
-                        <span className="text-xs text-rc-muted">
-                          Modifica dall&apos;incasso collegato
-                        </span>
-                      ) : (
-                        <div className="flex flex-wrap gap-1">
-                          <Button
-                            variant="secondary"
-                            onClick={() => setEditing(expense)}
-                          >
-                            Modifica
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            onClick={() => onDuplicate(expense.id)}
-                          >
-                            Duplica
-                          </Button>
-                          <Button
-                            variant="danger"
-                            onClick={() => onRemove(expense.id)}
-                          >
-                            Elimina
-                          </Button>
-                        </div>
-                      )}
-                    </td>
-                  </DataRow>
-                  );
-                })}
-          </DataTable>
+                        </td>
+                        <td className="px-2 py-2 font-medium">
+                          <Money value={expense.amount} />
+                        </td>
+                        <td className="px-2 py-2">
+                          {linkedToBooking ? (
+                            <span className="text-xs text-rc-muted">
+                              Modifica dall&apos;incasso collegato
+                            </span>
+                          ) : (
+                            <div className="flex flex-wrap gap-1">
+                              <Button
+                                variant="secondary"
+                                onClick={() => setEditing(expense)}
+                              >
+                                Modifica
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                onClick={() => onDuplicate(expense.id)}
+                              >
+                                Duplica
+                              </Button>
+                              <Button
+                                variant="danger"
+                                onClick={() => onRemove(expense.id)}
+                              >
+                                Elimina
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      </DataRow>
+                    );
+                  })}
+                </DataTable>
+              </div>
+            ))}
+          </div>
         )}
       </Card>
     </div>

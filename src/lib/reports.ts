@@ -110,6 +110,8 @@ function applyReportFilter(
   const filters = {
     month: filter.month,
     propertyId: filter.propertyId,
+    categoryId: "all" as const,
+    platformId: "all" as const,
     search: "",
   };
 

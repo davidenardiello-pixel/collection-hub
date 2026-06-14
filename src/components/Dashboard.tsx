@@ -206,24 +206,28 @@ export function Dashboard() {
         {view === "income" ? (
           <IncomeView
             bookings={bookings}
+            expenses={expenses}
             properties={properties}
             platforms={platforms}
             onAdd={addBooking}
             onUpdate={updateBooking}
             onDuplicate={duplicateBooking}
             onRemove={removeBooking}
+            onClearTransactions={clearTransactions}
           />
         ) : null}
 
         {view === "expenses" ? (
           <ExpensesView
             expenses={expenses}
+            bookings={bookings}
             properties={properties}
             expenseCategories={expenseCategories}
             onAdd={addExpense}
             onUpdate={updateExpense}
             onDuplicate={duplicateExpense}
             onRemove={removeExpense}
+            onClearTransactions={clearTransactions}
           />
         ) : null}
 
