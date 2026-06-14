@@ -1,4 +1,5 @@
 import type { AirbnbSyncPreview } from "./airbnb";
+import { deriveAirbnbBookingAmounts } from "./airbnb-pricing";
 import type { BookingComSyncPreview } from "./booking-com";
 import type { OtaImportSnapshot } from "../types";
 
@@ -52,8 +53,12 @@ export function buildAirbnbSnapshot(
   propertyId: string,
   filename: string,
   preview: AirbnbSyncPreview,
+  airbnbCommissionRate?: number,
 ): OtaImportSnapshot {
   const reservations = preview.reservations;
+  const derived = reservations.map((item) =>
+    deriveAirbnbBookingAmounts(item.netEarnings, airbnbCommissionRate),
+  );
 
   return {
     platform: "airbnb",
@@ -62,10 +67,10 @@ export function buildAirbnbSnapshot(
     filename,
     importedAt: new Date().toISOString(),
     reservationCount: reservations.length,
-    grossTotal: sumReservationMoney(
-      reservations.map((item) => item.netEarnings),
+    grossTotal: sumReservationMoney(derived.map((item) => item.grossIncome)),
+    commissionTotal: sumReservationMoney(
+      derived.map((item) => item.otaCommission),
     ),
-    commissionTotal: 0,
     added: preview.added,
     updated: preview.updated,
     removed: preview.removed,

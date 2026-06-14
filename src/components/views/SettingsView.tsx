@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { formatCurrency } from "@/lib/calculations";
+import { DEFAULT_AIRBNB_COMMISSION_RATE } from "@/lib/constants";
 import { downloadBackup } from "@/lib/backup";
 import {
   FISCAL_YEAR,
@@ -65,6 +66,7 @@ export function SettingsView({
     id: string,
     name: string,
     monthlyRent: number,
+    airbnbCommissionRate?: number,
   ) => string | null;
   onRemoveProperty: (id: string) => string | null;
   onAddPlatform: (name: string) => string | null;
@@ -304,11 +306,12 @@ export function SettingsView({
               <PropertyRow
                 key={`${property.id}-${property.name}-${property.monthlyRent}`}
                 property={property}
-                onSave={(name, monthlyRent) => {
+                onSave={(name, monthlyRent, airbnbCommissionRate) => {
                   const error = onUpdateProperty(
                     property.id,
                     name,
                     monthlyRent,
+                    airbnbCommissionRate,
                   );
                   showResult(error, "Appartamento aggiornato.");
                 }}
@@ -433,11 +436,20 @@ function PropertyRow({
   onRemove,
 }: {
   property: Property;
-  onSave: (name: string, monthlyRent: number) => void;
+  onSave: (
+    name: string,
+    monthlyRent: number,
+    airbnbCommissionRate: number,
+  ) => void;
   onRemove: () => void;
 }) {
   const [name, setName] = useState(property.name);
   const [monthlyRent, setMonthlyRent] = useState(String(property.monthlyRent));
+  const [airbnbCommissionPercent, setAirbnbCommissionPercent] = useState(
+    String(
+      (property.airbnbCommissionRate ?? DEFAULT_AIRBNB_COMMISSION_RATE) * 100,
+    ),
+  );
 
   return (
     <div className="space-y-2 rounded-xl border border-rc-gold/20 bg-rc-charcoal/70 p-3">
@@ -449,10 +461,26 @@ function PropertyRow({
         value={monthlyRent}
         onChange={(event) => setMonthlyRent(event.target.value)}
       />
+      <Field label="Commissione Airbnb (%)">
+        <Input
+          type="number"
+          min="0"
+          max="100"
+          step="0.1"
+          value={airbnbCommissionPercent}
+          onChange={(event) => setAirbnbCommissionPercent(event.target.value)}
+        />
+      </Field>
       <div className="flex gap-2">
         <Button
           variant="secondary"
-          onClick={() => onSave(name, Number(monthlyRent || 0))}
+          onClick={() =>
+            onSave(
+              name,
+              Number(monthlyRent || 0),
+              Number(airbnbCommissionPercent || 0) / 100,
+            )
+          }
         >
           Salva
         </Button>
@@ -461,7 +489,8 @@ function PropertyRow({
         </Button>
       </div>
       <p className="text-xs text-rc-muted">
-        Affitto: {formatCurrency(Number(monthlyRent || 0))} / mese
+        Affitto: {formatCurrency(Number(monthlyRent || 0))} / mese · Airbnb{" "}
+        {airbnbCommissionPercent}% + IVA 22%
       </p>
     </div>
   );

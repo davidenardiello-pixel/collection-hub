@@ -5,6 +5,7 @@ import {
   upsertAllBookingLinkedExpenses,
 } from "../booking-vat";
 import type { Booking, DashboardData, Expense } from "../types";
+import { deriveAirbnbBookingAmounts, getAirbnbCommissionRate } from "./airbnb-pricing";
 
 export const AIRBNB_PLATFORM_ID = "airbnb";
 export const AIRBNB_IMPORT_PREFIX = "airbnb";
@@ -118,7 +119,7 @@ function removeManualOtaMonthExpenses(
       return true;
     }
 
-    return expense.categoryId !== "iva";
+    return expense.categoryId !== "iva" && expense.categoryId !== "com-airbnb";
   });
 }
 
@@ -169,6 +170,11 @@ export function syncAirbnbReservations(
     const shouldLock =
       existing?.locked ||
       isCheckInOnOrBeforeToday(reservation.checkIn, referenceDate);
+    const property = data.properties.find((item) => item.id === propertyId);
+    const amounts = deriveAirbnbBookingAmounts(
+      reservation.netEarnings,
+      getAirbnbCommissionRate(property),
+    );
     const payload: Booking = {
       ...(existing ?? { id: crypto.randomUUID() }),
       description: reservation.guestName,
@@ -176,15 +182,15 @@ export function syncAirbnbReservations(
       platformId: AIRBNB_PLATFORM_ID,
       checkIn: reservation.checkIn,
       checkOut: reservation.checkOut,
-      grossIncome: reservation.netEarnings,
+      grossIncome: amounts.grossIncome,
       cleaningFee: 0,
-      otaCommission: 0,
+      otaCommission: amounts.otaCommission,
       externalId: reservation.externalId,
       otaImportScope: scope,
       locked: shouldLock,
       importedFromExcel: false,
       legacyIncomeAttribution: false,
-      notes: "Import Airbnb — guadagni netti (commissioni già dedotte)",
+      notes: `Import Airbnb — netto host ${amounts.hostNet.toFixed(2)} €, lordo prenotazione ${amounts.grossIncome.toFixed(2)} € (ricostruito da Guadagni CSV)`,
     };
 
     if (existing) {

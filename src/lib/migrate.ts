@@ -17,6 +17,7 @@ import {
   createEmptyProfitTargets,
   DEFAULT_CLEANING_COSTS,
   DEFAULT_EXPENSE_CATEGORIES,
+  DEFAULT_AIRBNB_COMMISSION_RATE,
   DEFAULT_KROSSBOOKING_MONTHLY,
   DEFAULT_PLATFORMS,
   DEFAULT_PROPERTIES,
@@ -72,6 +73,8 @@ function normalizeProperty(property: Property): Property {
       0,
     krossBookingMonthly:
       property.krossBookingMonthly ?? DEFAULT_KROSSBOOKING_MONTHLY,
+    airbnbCommissionRate:
+      property.airbnbCommissionRate ?? DEFAULT_AIRBNB_COMMISSION_RATE,
   };
 }
 

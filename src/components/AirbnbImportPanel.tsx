@@ -3,8 +3,12 @@
 import { useRef, useState } from "react";
 import { formatCurrency } from "@/lib/calculations";
 import { calculateBookingVat } from "@/lib/booking-vat";
-import { FISCAL_YEAR, MONTH_LABELS } from "@/lib/constants";
+import { DEFAULT_AIRBNB_COMMISSION_RATE, FISCAL_YEAR, MONTH_LABELS } from "@/lib/constants";
 import type { AirbnbSyncPreview } from "@/lib/ota-import/airbnb";
+import {
+  deriveAirbnbBookingAmounts,
+  getAirbnbCommissionRate,
+} from "@/lib/ota-import/airbnb-pricing";
 import {
   getLatestAirbnbSnapshot,
   sumReservationMoney,
@@ -19,6 +23,19 @@ function getDefaultImportMonth(): number {
   }
 
   return 1;
+}
+
+function previewDerivedAmounts(
+  preview: AirbnbSyncPreview,
+  airbnbCommissionRate: number,
+) {
+  return preview.reservations.map((reservation) => ({
+    reservation,
+    amounts: deriveAirbnbBookingAmounts(
+      reservation.netEarnings,
+      airbnbCommissionRate,
+    ),
+  }));
 }
 
 export function AirbnbImportPanel({
@@ -108,13 +125,21 @@ export function AirbnbImportPanel({
     void runImport(file);
   }
 
+  const selectedProperty = properties.find((item) => item.id === propertyId);
+  const airbnbCommissionRate = getAirbnbCommissionRate(selectedProperty);
+  const previewRows = preview
+    ? previewDerivedAmounts(preview, airbnbCommissionRate)
+    : [];
+
   return (
     <Card title="Import Airbnb">
       <p className="mb-4 text-sm text-rc-muted">
         Carica l&apos;export prenotazioni Airbnb (.csv). Il campo{" "}
-        <strong>Guadagni</strong> è già netto (commissioni Airbnb dedotte).
-        Escludiamo solo le righe con stato cancellato. L&apos;IVA (10% scorporo)
-        e le pulizie check-in sono calcolate come per Booking.
+        <strong>Guadagni</strong> è il netto host. Per questo appartamento la
+        commissione Airbnb è{" "}
+        <strong>{(airbnbCommissionRate * 100).toFixed(1).replace(".0", "")}%</strong>
+        + IVA 22%: lordo fattura = netto ÷{" "}
+        {(1 - airbnbCommissionRate * 1.22).toFixed(4)}.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -166,7 +191,10 @@ export function AirbnbImportPanel({
           </p>
           <p className="mt-2 text-rc-muted">
             {savedSnapshot.filename} · {savedSnapshot.reservationCount}{" "}
-            prenotazioni · netto {formatCurrency(savedSnapshot.grossTotal)}
+            prenotazioni · lordo {formatCurrency(savedSnapshot.grossTotal)}
+            {savedSnapshot.commissionTotal > 0
+              ? ` · commissione ${formatCurrency(savedSnapshot.commissionTotal)}`
+              : ""}
           </p>
           {savedSnapshot.removedGuests.length > 0 ? (
             <p className="mt-1 text-xs text-rc-gold-light/80">
@@ -187,37 +215,50 @@ export function AirbnbImportPanel({
             {preview.locked}
           </p>
           <p className="mt-2 text-rc-muted">
-            Dal file — netto{" "}
+            Ricostruiti dal CSV — netto host{" "}
             {formatCurrency(
               sumReservationMoney(
-                preview.reservations.map((item) => item.netEarnings),
+                previewRows.map((row) => row.amounts.hostNet),
               ),
             )}{" "}
-            · IVA 10% (scorporo, calcolata){" "}
+            · lordo prenotazione{" "}
             {formatCurrency(
-              preview.reservations.reduce(
-                (total, item) =>
+              sumReservationMoney(
+                previewRows.map((row) => row.amounts.grossIncome),
+              ),
+            )}{" "}
+            · commissione Airbnb{" "}
+            {formatCurrency(
+              sumReservationMoney(
+                previewRows.map((row) => row.amounts.otaCommission),
+              ),
+            )}{" "}
+            · IVA soggiorno 10%{" "}
+            {formatCurrency(
+              previewRows.reduce(
+                (total, row) =>
                   total +
                   calculateBookingVat({
                     id: "",
                     description: "",
                     propertyId: "",
                     platformId: "airbnb",
-                    checkIn: item.checkIn,
-                    checkOut: item.checkOut,
-                    grossIncome: item.netEarnings,
+                    checkIn: row.reservation.checkIn,
+                    checkOut: row.reservation.checkOut,
+                    grossIncome: row.amounts.grossIncome,
                     cleaningFee: 0,
-                    otaCommission: 0,
+                    otaCommission: row.amounts.otaCommission,
                   }),
                 0,
               ),
             )}
           </p>
           <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto text-rc-muted">
-            {preview.reservations.map((reservation) => (
+            {previewRows.map(({ reservation, amounts }) => (
               <li key={reservation.externalId}>
                 {reservation.guestName} · {reservation.checkIn} →{" "}
-                {reservation.checkOut} · {formatCurrency(reservation.netEarnings)}
+                {reservation.checkOut} · netto {formatCurrency(amounts.hostNet)}{" "}
+                → lordo {formatCurrency(amounts.grossIncome)}
                 {reservation.status ? ` · ${reservation.status}` : ""}
               </li>
             ))}

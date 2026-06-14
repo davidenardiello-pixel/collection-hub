@@ -22,6 +22,70 @@ export const EMPTY_FILTERS: TransactionFilters = {
   search: "",
 };
 
+export interface PropertyMonthGroup<T> {
+  propertyId: string;
+  name: string;
+  months: {
+    month: number;
+    label: string;
+    items: T[];
+  }[];
+}
+
+export function getBookingDisplayMonths(booking: Booking): number[] {
+  const months: number[] = [];
+
+  for (let month = 1; month <= 12; month++) {
+    if (
+      bookingAppliesToPeriod(booking, {
+        year: FISCAL_YEAR,
+        month,
+      })
+    ) {
+      months.push(month);
+    }
+  }
+
+  return months;
+}
+
+export function groupByPropertyAndMonth<T>(
+  items: T[],
+  getPropertyId: (item: T) => string,
+  getMonths: (item: T) => number[],
+  propertyNames: Record<string, string>,
+  sortItems?: (items: T[]) => T[],
+): PropertyMonthGroup<T>[] {
+  const structure = new Map<string, Map<number, T[]>>();
+  const sortFn = sortItems ?? ((groupItems) => groupItems);
+
+  for (const item of items) {
+    const propertyId = getPropertyId(item);
+
+    for (const month of getMonths(item)) {
+      const monthMap = structure.get(propertyId) ?? new Map<number, T[]>();
+      const bucket = monthMap.get(month) ?? [];
+      bucket.push(item);
+      monthMap.set(month, bucket);
+      structure.set(propertyId, monthMap);
+    }
+  }
+
+  return Array.from(structure.entries())
+    .map(([propertyId, monthMap]) => ({
+      propertyId,
+      name: propertyNames[propertyId] ?? propertyId,
+      months: Array.from(monthMap.entries())
+        .sort(([leftMonth], [rightMonth]) => leftMonth - rightMonth)
+        .map(([month, monthItems]) => ({
+          month,
+          label: MONTH_LABELS[month - 1] ?? `Mese ${month}`,
+          items: sortFn(monthItems),
+        })),
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name, "it"));
+}
+
 export function filterBookings(
   bookings: Booking[],
   filters: TransactionFilters,

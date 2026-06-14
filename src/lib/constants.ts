@@ -9,6 +9,7 @@ export const DEFAULT_CLEANING_COSTS: Record<string, number> = {
 };
 
 export const DEFAULT_KROSSBOOKING_MONTHLY = 30;
+export const DEFAULT_AIRBNB_COMMISSION_RATE = 0.155;
 
 export const DEFAULT_PROPERTIES: Property[] = [
   {

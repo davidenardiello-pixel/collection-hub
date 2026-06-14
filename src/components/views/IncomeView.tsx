@@ -9,13 +9,16 @@ import {
   getBookingTotal,
   getPlatformMonthlyMatrix,
   sumBookings,
+  sumBookingsInPeriod,
 } from "@/lib/calculations";
+import { getAllocatedBookingAmount } from "@/lib/booking-allocation";
 import { FISCAL_YEAR, MONTH_LABELS } from "@/lib/constants";
 import {
   describeActiveFilters,
   EMPTY_FILTERS,
   filterBookings,
-  groupByProperty,
+  getBookingDisplayMonths,
+  groupByPropertyAndMonth,
 } from "@/lib/filters";
 import type { PurgePreview, PurgeScope } from "@/lib/purge";
 import type { Booking, Expense, Platform, Property } from "@/lib/types";
@@ -23,6 +26,16 @@ import { BookingForm } from "../BookingForm";
 import { MonthPropertyPurgeAction } from "../MonthPropertyPurgeAction";
 import { TransactionFilters } from "../TransactionFilters";
 import { Button, Card, DataRow, DataTable, EmptyState, Money } from "../ui";
+
+function uniqueBookings(bookings: Booking[]): Booking[] {
+  const byId = new Map<string, Booking>();
+
+  for (const booking of bookings) {
+    byId.set(booking.id, booking);
+  }
+
+  return Array.from(byId.values());
+}
 
 export function IncomeView({
   bookings,
@@ -66,22 +79,227 @@ export function IncomeView({
     properties: propertyMap,
     platforms: platformMap,
   });
-  const groupedBookings = useMemo(
+  const propertyMonthGroups = useMemo(
     () =>
-      groupByProperty(
+      groupByPropertyAndMonth(
         filteredBookings,
         (booking) => booking.propertyId,
+        getBookingDisplayMonths,
         propertyMap,
+        (items) =>
+          [...items].sort((left, right) =>
+            left.checkIn.localeCompare(right.checkIn),
+          ),
       ),
     [filteredBookings, propertyMap],
   );
-  const showPropertySections = filters.propertyId === "all" && groupedBookings.length > 1;
+  const showPropertySections = filters.propertyId === "all";
+  const showMonthSections = filters.month === "all";
 
   return (
     <div className="space-y-6">
+      <Card
+        title={`Incassi per appartamento · FY${FISCAL_YEAR}`}
+        subtitle={
+          activeFilterLabels.length > 0
+            ? `Filtrata: ${activeFilterLabels.join(" · ")}`
+            : "Ordinati per appartamento e mese"
+        }
+      >
+        {filteredBookings.length === 0 ? (
+          <EmptyState
+            message={
+              bookings.length === 0
+                ? "Nessuna prenotazione inserita."
+                : "Nessuna prenotazione corrisponde ai filtri."
+            }
+          />
+        ) : (
+          <div className="space-y-10">
+            {propertyMonthGroups.map((propertyGroup) => (
+              <div key={propertyGroup.propertyId} className="space-y-6">
+                {showPropertySections ? (
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rc-gold/30 pb-2">
+                    <h3 className="font-[family-name:var(--font-cormorant)] text-xl font-semibold text-rc-gold-light">
+                      {propertyGroup.name}
+                    </h3>
+                    <p className="text-sm text-rc-muted">
+                      {uniqueBookings(
+                        propertyGroup.months.flatMap((month) => month.items),
+                      ).length}{" "}
+                      prenotazioni ·{" "}
+                      {formatCurrency(
+                        sumBookings(
+                          uniqueBookings(
+                            propertyGroup.months.flatMap(
+                              (month) => month.items,
+                            ),
+                          ),
+                        ),
+                      )}
+                    </p>
+                  </div>
+                ) : null}
+
+                {propertyGroup.months.map((monthGroup) => (
+                  <div key={`${propertyGroup.propertyId}-${monthGroup.month}`}>
+                    {showMonthSections ? (
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <h4 className="text-sm font-semibold uppercase tracking-[0.14em] text-rc-ink">
+                          {monthGroup.label}
+                        </h4>
+                        <p className="text-sm text-rc-muted">
+                          {monthGroup.items.length} prenotazioni ·{" "}
+                          {formatCurrency(
+                            sumBookingsInPeriod(monthGroup.items, {
+                              year: FISCAL_YEAR,
+                              month: monthGroup.month,
+                            }),
+                          )}
+                        </p>
+                      </div>
+                    ) : null}
+
+                    <DataTable
+                      headers={[
+                        "Prenotazione",
+                        ...(showPropertySections ? [] : ["Proprietà"]),
+                        ...(showMonthSections ? [] : ["Mese"]),
+                        "Piattaforma",
+                        "Check-in",
+                        "Check-out",
+                        "Notti",
+                        "Lordo",
+                        "Commissione",
+                        "Netto",
+                        "Totale",
+                        "",
+                      ]}
+                    >
+                      {monthGroup.items.map((booking) => {
+                        const period = {
+                          year: FISCAL_YEAR,
+                          month: monthGroup.month,
+                        };
+
+                        return (
+                        <DataRow key={`${monthGroup.month}-${booking.id}`}>
+                          <td className="px-2 py-2">{booking.description}</td>
+                          {showPropertySections ? null : (
+                            <td className="px-2 py-2">
+                              {propertyMap[booking.propertyId] ??
+                                booking.propertyId}
+                            </td>
+                          )}
+                          {showMonthSections ? null : (
+                            <td className="px-2 py-2">
+                              {MONTH_LABELS[
+                                getBookingDisplayMonths(booking)[0] - 1
+                              ] ?? "—"}
+                            </td>
+                          )}
+                          <td className="px-2 py-2">
+                            {platformMap[booking.platformId] ??
+                              booking.platformId}
+                          </td>
+                          <td className="px-2 py-2">
+                            {formatDate(booking.checkIn)}
+                          </td>
+                          <td className="px-2 py-2">
+                            {formatDate(booking.checkOut)}
+                          </td>
+                          <td className="px-2 py-2">
+                            {getBookingNights(booking)}
+                          </td>
+                          <td className="px-2 py-2">
+                            <Money
+                              value={getAllocatedBookingAmount(
+                                booking,
+                                period,
+                                booking.grossIncome,
+                              )}
+                            />
+                          </td>
+                          <td className="px-2 py-2">
+                            <Money
+                              value={getAllocatedBookingAmount(
+                                booking,
+                                period,
+                                booking.otaCommission ?? 0,
+                              )}
+                            />
+                          </td>
+                          <td className="px-2 py-2">
+                            <Money
+                              value={getAllocatedBookingAmount(
+                                booking,
+                                period,
+                                getBookingNetIncome(booking),
+                              )}
+                            />
+                          </td>
+                          <td className="px-2 py-2 font-medium">
+                            <Money
+                              value={getAllocatedBookingAmount(
+                                booking,
+                                period,
+                                getBookingTotal(booking),
+                              )}
+                            />
+                          </td>
+                          <td className="px-2 py-2">
+                            <div className="flex flex-wrap gap-1">
+                              <Button
+                                variant="secondary"
+                                onClick={() => setEditing(booking)}
+                              >
+                                Modifica
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                onClick={() => onDuplicate(booking.id)}
+                              >
+                                Duplica
+                              </Button>
+                              <Button
+                                variant="danger"
+                                onClick={() => onRemove(booking.id)}
+                              >
+                                Elimina
+                              </Button>
+                            </div>
+                          </td>
+                        </DataRow>
+                        );
+                      })}
+                    </DataTable>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <BookingForm
+        key={editing?.id ?? "new"}
+        properties={properties}
+        platforms={platforms}
+        editing={editing}
+        onSubmit={(booking) => {
+          if (editing) {
+            onUpdate(editing.id, booking);
+            setEditing(null);
+          } else {
+            onAdd(booking);
+          }
+        }}
+        onCancelEdit={() => setEditing(null)}
+      />
+
       <Card title="Filtra incassi">
         <p className="mb-4 text-sm text-rc-muted">
-          Restringi la lista per appartamento, mese, piattaforma o testo. La
+          Restringi la vista per appartamento, mese, piattaforma o testo. La
           matrice sotto segue gli stessi filtri.
         </p>
         <TransactionFilters
@@ -113,22 +331,6 @@ export function IncomeView({
         />
       </Card>
 
-      <BookingForm
-        key={editing?.id ?? "new"}
-        properties={properties}
-        platforms={platforms}
-        editing={editing}
-        onSubmit={(booking) => {
-          if (editing) {
-            onUpdate(editing.id, booking);
-            setEditing(null);
-          } else {
-            onAdd(booking);
-          }
-        }}
-        onCancelEdit={() => setEditing(null)}
-      />
-
       <Card
         title="Matrice incassi per piattaforma"
         subtitle={
@@ -158,103 +360,6 @@ export function IncomeView({
             </DataRow>
           ))}
         </DataTable>
-      </Card>
-
-      <Card title={`Prenotazioni FY${FISCAL_YEAR}`}>
-        {filteredBookings.length === 0 ? (
-          <EmptyState
-            message={
-              bookings.length === 0
-                ? "Nessuna prenotazione inserita."
-                : "Nessuna prenotazione corrisponde ai filtri."
-            }
-          />
-        ) : (
-          <div className="space-y-8">
-            {groupedBookings.map((group) => (
-              <div key={group.propertyId} className="space-y-3">
-                {showPropertySections ? (
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rc-gold/25 pb-2">
-                    <h3 className="font-[family-name:var(--font-cormorant)] text-lg font-semibold text-rc-gold-light">
-                      {group.name}
-                    </h3>
-                    <p className="text-sm text-rc-muted">
-                      {group.items.length} prenotazioni ·{" "}
-                      {formatCurrency(sumBookings(group.items))}
-                    </p>
-                  </div>
-                ) : null}
-
-                <DataTable
-                  headers={[
-                    "Prenotazione",
-                    ...(showPropertySections ? [] : ["Proprietà"]),
-                    "Piattaforma",
-                    "Check-in",
-                    "Check-out",
-                    "Notti",
-                    "Lordo",
-                    "Commissione",
-                    "Netto",
-                    "Totale",
-                    "",
-                  ]}
-                >
-                  {group.items.map((booking) => (
-                    <DataRow key={booking.id}>
-                      <td className="px-2 py-2">{booking.description}</td>
-                      {showPropertySections ? null : (
-                        <td className="px-2 py-2">
-                          {propertyMap[booking.propertyId] ?? booking.propertyId}
-                        </td>
-                      )}
-                      <td className="px-2 py-2">
-                        {platformMap[booking.platformId] ?? booking.platformId}
-                      </td>
-                      <td className="px-2 py-2">{formatDate(booking.checkIn)}</td>
-                      <td className="px-2 py-2">{formatDate(booking.checkOut)}</td>
-                      <td className="px-2 py-2">{getBookingNights(booking)}</td>
-                      <td className="px-2 py-2">
-                        <Money value={booking.grossIncome} />
-                      </td>
-                      <td className="px-2 py-2">
-                        <Money value={booking.otaCommission ?? 0} />
-                      </td>
-                      <td className="px-2 py-2">
-                        <Money value={getBookingNetIncome(booking)} />
-                      </td>
-                      <td className="px-2 py-2 font-medium">
-                        <Money value={getBookingTotal(booking)} />
-                      </td>
-                      <td className="px-2 py-2">
-                        <div className="flex flex-wrap gap-1">
-                          <Button
-                            variant="secondary"
-                            onClick={() => setEditing(booking)}
-                          >
-                            Modifica
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            onClick={() => onDuplicate(booking.id)}
-                          >
-                            Duplica
-                          </Button>
-                          <Button
-                            variant="danger"
-                            onClick={() => onRemove(booking.id)}
-                          >
-                            Elimina
-                          </Button>
-                        </div>
-                      </td>
-                    </DataRow>
-                  ))}
-                </DataTable>
-              </div>
-            ))}
-          </div>
-        )}
       </Card>
     </div>
   );

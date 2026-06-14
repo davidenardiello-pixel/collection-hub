@@ -4,6 +4,8 @@ export interface Property {
   monthlyRent: number;
   cleaningCostPerCheckIn: number;
   krossBookingMonthly: number;
+  /** Commissione Airbnb imponibile (es. 0,155 = 15,5% o 0,03 = 3%). Default 15,5%. */
+  airbnbCommissionRate?: number;
 }
 
 export interface AutomationSettings {

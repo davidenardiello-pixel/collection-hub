@@ -353,17 +353,35 @@ export function useLocalDashboardStorage() {
   );
 
   const updateProperty = useCallback(
-    (id: string, name: string, monthlyRent: number): string | null => {
+    (
+      id: string,
+      name: string,
+      monthlyRent: number,
+      airbnbCommissionRate?: number,
+    ): string | null => {
       const trimmed = name.trim();
       if (!trimmed) {
         return "Il nome non può essere vuoto.";
+      }
+
+      const rate = airbnbCommissionRate;
+      if (
+        rate != null &&
+        (rate <= 0 || rate >= 1 || !Number.isFinite(rate))
+      ) {
+        return "La commissione Airbnb deve essere tra 0% e 100%.";
       }
 
       persist((current) => ({
         ...current,
         properties: current.properties.map((property) =>
           property.id === id
-            ? { ...property, name: trimmed, monthlyRent }
+            ? {
+                ...property,
+                name: trimmed,
+                monthlyRent,
+                ...(rate != null ? { airbnbCommissionRate: rate } : {}),
+              }
             : property,
         ),
       }));
@@ -752,10 +770,12 @@ export function useLocalDashboardStorage() {
           body.reservations!,
         );
         preview = synced.preview;
+        const property = current.properties.find((item) => item.id === propertyId);
         const snapshot = buildAirbnbSnapshot(
           propertyId,
           body.filename ?? "upload.csv",
           synced.preview,
+          property?.airbnbCommissionRate,
         );
 
         return normalizeDashboardData({
