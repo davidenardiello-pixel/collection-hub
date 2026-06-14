@@ -95,6 +95,40 @@ export function ExpensesView({
 
   return (
     <div className="space-y-6">
+      <Card title="Filtra spese">
+        <p className="mb-4 text-sm text-rc-muted">
+          Restringi per appartamento, mese, categoria o testo. La lista, il
+          grafico e la matrice seguono gli stessi filtri.
+        </p>
+        <TransactionFilters
+          properties={properties}
+          expenseCategories={expenseCategories}
+          filters={filters}
+          onChange={setFilters}
+        />
+        <div className="mt-4 rounded-xl border border-rc-gold/20 bg-rc-charcoal/40 px-4 py-3 text-sm text-rc-muted">
+          <strong className="text-rc-ink">{filteredExpenses.length}</strong> di{" "}
+          {expenses.length} spese · Totale{" "}
+          <span className="font-semibold text-rc-gold-light">
+            {formatCurrency(filteredTotal)}
+          </span>
+          {activeFilterLabels.length > 0 ? (
+            <span> · {activeFilterLabels.join(" · ")}</span>
+          ) : null}
+        </div>
+        <MonthPropertyPurgeAction
+          filters={filters}
+          bookings={bookings}
+          expenses={expenses}
+          propertyName={
+            filters.propertyId === "all"
+              ? ""
+              : (propertyMap[filters.propertyId] ?? filters.propertyId)
+          }
+          onPurge={onClearTransactions}
+        />
+      </Card>
+
       <Card
         title={`Spese per appartamento · FY${FISCAL_YEAR}`}
         subtitle={
@@ -265,40 +299,6 @@ export function ExpensesView({
         }}
         onCancelEdit={() => setEditing(null)}
       />
-
-      <Card title="Filtra spese">
-        <p className="mb-4 text-sm text-rc-muted">
-          Restringi per appartamento, mese, categoria o testo. Grafico e matrice
-          seguono gli stessi filtri.
-        </p>
-        <TransactionFilters
-          properties={properties}
-          expenseCategories={expenseCategories}
-          filters={filters}
-          onChange={setFilters}
-        />
-        <div className="mt-4 rounded-xl border border-rc-gold/20 bg-rc-charcoal/40 px-4 py-3 text-sm text-rc-muted">
-          <strong className="text-rc-ink">{filteredExpenses.length}</strong> di{" "}
-          {expenses.length} spese · Totale{" "}
-          <span className="font-semibold text-rc-gold-light">
-            {formatCurrency(filteredTotal)}
-          </span>
-          {activeFilterLabels.length > 0 ? (
-            <span> · {activeFilterLabels.join(" · ")}</span>
-          ) : null}
-        </div>
-        <MonthPropertyPurgeAction
-          filters={filters}
-          bookings={bookings}
-          expenses={expenses}
-          propertyName={
-            filters.propertyId === "all"
-              ? ""
-              : (propertyMap[filters.propertyId] ?? filters.propertyId)
-          }
-          onPurge={onClearTransactions}
-        />
-      </Card>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card

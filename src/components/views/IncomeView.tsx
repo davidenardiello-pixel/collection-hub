@@ -98,6 +98,40 @@ export function IncomeView({
 
   return (
     <div className="space-y-6">
+      <Card title="Filtra incassi">
+        <p className="mb-4 text-sm text-rc-muted">
+          Restringi la vista per appartamento, mese, piattaforma o testo. La
+          lista e la matrice seguono gli stessi filtri.
+        </p>
+        <TransactionFilters
+          properties={properties}
+          platforms={platforms}
+          filters={filters}
+          onChange={setFilters}
+        />
+        <div className="mt-4 rounded-xl border border-rc-gold/20 bg-rc-charcoal/40 px-4 py-3 text-sm text-rc-muted">
+          <strong className="text-rc-ink">{filteredBookings.length}</strong> di{" "}
+          {bookings.length} prenotazioni · Totale lordo{" "}
+          <span className="font-semibold text-rc-gold-light">
+            {formatCurrency(filteredTotal)}
+          </span>
+          {activeFilterLabels.length > 0 ? (
+            <span> · {activeFilterLabels.join(" · ")}</span>
+          ) : null}
+        </div>
+        <MonthPropertyPurgeAction
+          filters={filters}
+          bookings={bookings}
+          expenses={expenses}
+          propertyName={
+            filters.propertyId === "all"
+              ? ""
+              : (propertyMap[filters.propertyId] ?? filters.propertyId)
+          }
+          onPurge={onClearTransactions}
+        />
+      </Card>
+
       <Card
         title={`Incassi per appartamento · FY${FISCAL_YEAR}`}
         subtitle={
@@ -296,40 +330,6 @@ export function IncomeView({
         }}
         onCancelEdit={() => setEditing(null)}
       />
-
-      <Card title="Filtra incassi">
-        <p className="mb-4 text-sm text-rc-muted">
-          Restringi la vista per appartamento, mese, piattaforma o testo. La
-          matrice sotto segue gli stessi filtri.
-        </p>
-        <TransactionFilters
-          properties={properties}
-          platforms={platforms}
-          filters={filters}
-          onChange={setFilters}
-        />
-        <div className="mt-4 rounded-xl border border-rc-gold/20 bg-rc-charcoal/40 px-4 py-3 text-sm text-rc-muted">
-          <strong className="text-rc-ink">{filteredBookings.length}</strong> di{" "}
-          {bookings.length} prenotazioni · Totale lordo{" "}
-          <span className="font-semibold text-rc-gold-light">
-            {formatCurrency(filteredTotal)}
-          </span>
-          {activeFilterLabels.length > 0 ? (
-            <span> · {activeFilterLabels.join(" · ")}</span>
-          ) : null}
-        </div>
-        <MonthPropertyPurgeAction
-          filters={filters}
-          bookings={bookings}
-          expenses={expenses}
-          propertyName={
-            filters.propertyId === "all"
-              ? ""
-              : (propertyMap[filters.propertyId] ?? filters.propertyId)
-          }
-          onPurge={onClearTransactions}
-        />
-      </Card>
 
       <Card
         title="Matrice incassi per piattaforma"
