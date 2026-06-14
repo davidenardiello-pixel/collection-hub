@@ -1,42 +1,14 @@
-import { spawnSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import {
-  buildAirbnbSyncPeriod,
-  type AirbnbReservation,
-  type AirbnbSyncPeriod,
-} from "@/lib/ota-import/airbnb";
+import { requireApiAuth } from "@/lib/auth-request";
 import { FISCAL_YEAR } from "@/lib/constants";
-
-interface ParsePayload {
-  propertyId: string;
-  period: AirbnbSyncPeriod;
-  reservations: AirbnbReservation[];
-}
-
-function sanitizeFilename(filename: string): string {
-  return filename.replace(/[^\w.\- ()]/g, "_") || "upload.csv";
-}
-
-function persistUploadedFile(
-  propertyId: string,
-  filename: string,
-  buffer: Buffer,
-): string {
-  const uploadDir = join(process.cwd(), "data", "ota-uploads", propertyId);
-  mkdirSync(uploadDir, { recursive: true });
-
-  const safeName = sanitizeFilename(filename);
-  const savedPath = join(uploadDir, safeName);
-  writeFileSync(savedPath, buffer);
-  writeFileSync(join(uploadDir, "latest-airbnb.csv"), buffer);
-
-  return savedPath;
-}
+import { parseAirbnbUpload } from "@/lib/ota-import/parse-airbnb-upload";
 
 export async function POST(request: NextRequest) {
+  if (!(await requireApiAuth(request))) {
+    return NextResponse.json({ error: "Non autorizzato." }, { status: 401 });
+  }
+
   try {
     const formData = await request.formData();
     const file = formData.get("file");
@@ -62,37 +34,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const period = buildAirbnbSyncPeriod(year, month);
     const buffer = Buffer.from(await file.arrayBuffer());
-    const savedPath = persistUploadedFile(propertyId, file.name, buffer);
-
-    const scriptPath = join(process.cwd(), "scripts", "import-airbnb.py");
-    const result = spawnSync(
-      "python3",
-      [
-        scriptPath,
-        savedPath,
-        "--property-id",
-        propertyId,
-        "--year",
-        String(period.year),
-        "--month",
-        String(period.month),
-      ],
-      { encoding: "utf8" },
-    );
-
-    if (result.status !== 0) {
-      const details = (result.stderr || result.stdout || "").trim();
-      return NextResponse.json(
-        {
-          error: details || "Impossibile leggere il file Airbnb.",
-        },
-        { status: 500 },
-      );
-    }
-
-    const parsed = JSON.parse(result.stdout) as ParsePayload;
+    const parsed = parseAirbnbUpload(buffer, propertyId, year, month);
 
     return NextResponse.json({
       propertyId: parsed.propertyId,
@@ -100,7 +43,6 @@ export async function POST(request: NextRequest) {
       reservations: parsed.reservations,
       filename: file.name,
       count: parsed.reservations.length,
-      savedPath,
     });
   } catch (error) {
     const message =

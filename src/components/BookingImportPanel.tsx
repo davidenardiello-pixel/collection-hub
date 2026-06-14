@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/calculations";
 import { calculateBookingVat } from "@/lib/booking-vat";
 import { FISCAL_YEAR, MONTH_LABELS } from "@/lib/constants";
 import type { BookingComSyncPreview } from "@/lib/ota-import/booking-com";
+import { parseBookingComPeriodFromFilename } from "@/lib/ota-import/booking-com";
 import {
   getLatestBookingComSnapshot,
   sumReservationMoney,
@@ -31,6 +32,10 @@ export function BookingImportPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<BookingComSyncPreview | null>(null);
+  const [selectedFilename, setSelectedFilename] = useState<string | null>(null);
+  const detectedPeriod = selectedFilename
+    ? parseBookingComPeriodFromFilename(selectedFilename)
+    : null;
   const savedSnapshot = getLatestBookingComSnapshot(
     otaImportSnapshots,
     propertyId,
@@ -86,6 +91,7 @@ export function BookingImportPanel({
       return;
     }
 
+    setSelectedFilename(file.name);
     void runImport(file);
   }
 
@@ -126,11 +132,26 @@ export function BookingImportPanel({
       </div>
 
       <p className="mt-3 text-xs text-rc-muted">
-        Il file deve contenere le date nel nome, es.{" "}
+        Il mese di competenza viene letto dal <strong>nome del file</strong>, es.{" "}
         <code className="text-rc-gold-light">
           Soggiorno_ {FISCAL_YEAR}-06-01 - {FISCAL_YEAR}-06-30.xls
         </code>
-        . Mese di competenza: {MONTH_LABELS[5]} {FISCAL_YEAR}.
+        {detectedPeriod ? (
+          <>
+            {" "}
+            → rilevato:{" "}
+            <strong className="text-rc-gold-light">
+              {MONTH_LABELS[detectedPeriod.month - 1]} {detectedPeriod.year}
+            </strong>
+          </>
+        ) : selectedFilename ? (
+          <>
+            {" "}
+            → nome file non valido: inserisci le date{" "}
+            <code className="text-rc-gold-light">YYYY-MM-DD - YYYY-MM-DD</code> nel
+            nome.
+          </>
+        ) : null}
       </p>
 
       {error ? (

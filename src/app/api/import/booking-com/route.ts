@@ -1,41 +1,14 @@
-import { spawnSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import {
-  parseBookingComPeriodFromFilename,
-  type BookingComReservation,
-  type BookingComSyncPeriod,
-} from "@/lib/ota-import/booking-com";
-
-interface ParsePayload {
-  propertyId: string;
-  period: BookingComSyncPeriod;
-  reservations: BookingComReservation[];
-}
-
-function sanitizeFilename(filename: string): string {
-  return filename.replace(/[^\w.\- ()]/g, "_") || "upload.xls";
-}
-
-function persistUploadedFile(
-  propertyId: string,
-  filename: string,
-  buffer: Buffer,
-): string {
-  const uploadDir = join(process.cwd(), "data", "ota-uploads", propertyId);
-  mkdirSync(uploadDir, { recursive: true });
-
-  const safeName = sanitizeFilename(filename);
-  const savedPath = join(uploadDir, safeName);
-  writeFileSync(savedPath, buffer);
-  writeFileSync(join(uploadDir, "latest.xls"), buffer);
-
-  return savedPath;
-}
+import { requireApiAuth } from "@/lib/auth-request";
+import { parseBookingComPeriodFromFilename } from "@/lib/ota-import/booking-com";
+import { parseBookingComUpload } from "@/lib/ota-import/parse-booking-com-upload";
 
 export async function POST(request: NextRequest) {
+  if (!(await requireApiAuth(request))) {
+    return NextResponse.json({ error: "Non autorizzato." }, { status: 401 });
+  }
+
   try {
     const formData = await request.formData();
     const file = formData.get("file");
@@ -64,41 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const savedPath = persistUploadedFile(propertyId, file.name, buffer);
-
-    const scriptPath = join(process.cwd(), "scripts", "import-booking-com.py");
-    const result = spawnSync(
-      "python3",
-      [
-        scriptPath,
-        savedPath,
-        "--property-id",
-        propertyId,
-        "--year",
-        String(period.year),
-        "--month",
-        String(period.month),
-        "--start-date",
-        period.startDate,
-        "--end-date",
-        period.endDate,
-      ],
-      { encoding: "utf8" },
-    );
-
-    if (result.status !== 0) {
-      const details = (result.stderr || result.stdout || "").trim();
-      return NextResponse.json(
-        {
-          error:
-            details ||
-            "Impossibile leggere il file Booking. Installa xlrd con: pip3 install xlrd",
-        },
-        { status: 500 },
-      );
-    }
-
-    const parsed = JSON.parse(result.stdout) as ParsePayload;
+    const parsed = parseBookingComUpload(buffer, file.name, propertyId);
 
     return NextResponse.json({
       propertyId: parsed.propertyId,
@@ -106,7 +45,6 @@ export async function POST(request: NextRequest) {
       reservations: parsed.reservations,
       filename: file.name,
       count: parsed.reservations.length,
-      savedPath,
     });
   } catch (error) {
     const message =
