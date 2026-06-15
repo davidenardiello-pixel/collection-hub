@@ -3,6 +3,9 @@ import type { ExpenseCategory, Platform, Property } from "./types";
 export const FISCAL_YEAR = 2026;
 export const FISCAL_YEAR_START = `${FISCAL_YEAR}-01-01`;
 
+/** Da questo mese le metriche occupazione / ADR sono considerate attendibili. */
+export const OCCUPANCY_METRICS_START_MONTH = 6;
+
 export const DEFAULT_CLEANING_COSTS: Record<string, number> = {
   "regina-cappellari": 30,
   "re-di-roma": 50,

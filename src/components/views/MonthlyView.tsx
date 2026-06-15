@@ -16,7 +16,14 @@ import {
   getScopedPlatformBreakdown,
 } from "@/lib/calculations";
 import { CHART_COLORS } from "@/lib/brand";
-import { FISCAL_YEAR } from "@/lib/constants";
+import {
+  FISCAL_YEAR,
+  OCCUPANCY_METRICS_START_MONTH,
+} from "@/lib/constants";
+import {
+  getPropertyMonthOccupancy,
+  occupancyMetricsAvailable,
+} from "@/lib/occupancy";
 import type {
   Booking,
   Expense,
@@ -57,13 +64,20 @@ export function MonthlyView({
 }) {
   const months = getMonthlySummaries(bookings, expenses, profitTargets);
   const firstActiveMonth =
-    months.find((month) => month.income > 0 || month.expenses > 0)?.period.month ??
-    1;
-
-  const [selectedMonth, setSelectedMonth] = useState(firstActiveMonth);
-  const [selectedPropertyId, setSelectedPropertyId] = useState(
-    properties[0]?.id ?? "",
+    months.find((month) => month.income > 0 || month.expenses > 0)?.period
+      .month ?? 1;
+  const hasJuneData = months.some(
+    (month) =>
+      month.period.month >= OCCUPANCY_METRICS_START_MONTH &&
+      (month.income > 0 || month.expenses > 0),
   );
+  const initialMonth =
+    hasJuneData && firstActiveMonth < OCCUPANCY_METRICS_START_MONTH
+      ? OCCUPANCY_METRICS_START_MONTH
+      : firstActiveMonth;
+
+  const [selectedMonth, setSelectedMonth] = useState(initialMonth);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("all");
 
   const detail = useMemo(
     () =>
@@ -103,8 +117,13 @@ export function MonthlyView({
     [bookings, expenses, properties],
   );
 
+  const annualPropertyId =
+    selectedPropertyId === "all"
+      ? (propertiesMatrix[0]?.id ?? "")
+      : selectedPropertyId;
+
   const activeProperty =
-    propertiesMatrix.find((property) => property.id === selectedPropertyId) ??
+    propertiesMatrix.find((property) => property.id === annualPropertyId) ??
     propertiesMatrix[0];
 
   const monthTotals = propertiesMonthBreakdown.reduce(
@@ -121,16 +140,70 @@ export function MonthlyView({
     [selectedMonth],
   );
 
-  const totalPlatforms = useMemo(
-    () => getScopedPlatformBreakdown(bookings, platforms, monthPeriod),
-    [bookings, platforms, monthPeriod],
+  const scopedPropertyId =
+    selectedPropertyId === "all" ? undefined : selectedPropertyId;
+
+  const scopedPlatforms = useMemo(
+    () =>
+      getScopedPlatformBreakdown(
+        bookings,
+        platforms,
+        monthPeriod,
+        scopedPropertyId,
+      ),
+    [bookings, platforms, monthPeriod, scopedPropertyId],
   );
 
-  const totalCategories = useMemo(
+  const scopedCategories = useMemo(
     () =>
-      getScopedCategoryBreakdown(expenses, expenseCategories, monthPeriod),
-    [expenses, expenseCategories, monthPeriod],
+      getScopedCategoryBreakdown(
+        expenses,
+        expenseCategories,
+        monthPeriod,
+        scopedPropertyId,
+      ),
+    [expenses, expenseCategories, monthPeriod, scopedPropertyId],
   );
+
+  const scopedTotals = useMemo(() => {
+    if (!scopedPropertyId) {
+      return {
+        income: detail.income,
+        expenses: detail.expenses,
+        profit: detail.profit,
+        margin: detail.margin,
+      };
+    }
+
+    const row = propertiesMonthBreakdown.find(
+      (property) => property.id === scopedPropertyId,
+    );
+
+    return {
+      income: row?.income ?? 0,
+      expenses: row?.expenses ?? 0,
+      profit: row?.profit ?? 0,
+      margin: row?.margin ?? 0,
+    };
+  }, [scopedPropertyId, detail, propertiesMonthBreakdown]);
+
+  const propertyOccupancy = useMemo(() => {
+    if (!occupancyMetricsAvailable(selectedMonth) || !scopedPropertyId) {
+      return null;
+    }
+
+    return getPropertyMonthOccupancy(bookings, monthPeriod, scopedPropertyId);
+  }, [bookings, monthPeriod, scopedPropertyId, selectedMonth]);
+
+  const showOccupancyMetrics = occupancyMetricsAvailable(selectedMonth);
+  const selectedPropertyName =
+    scopedPropertyId
+      ? (properties.find((property) => property.id === scopedPropertyId)?.name ??
+        scopedPropertyId)
+      : "Tutti gli appartamenti";
+
+  const totalPlatforms = scopedPlatforms;
+  const totalCategories = scopedCategories;
 
   const propertyPlatformMatrix = useMemo(
     () =>
@@ -199,33 +272,88 @@ export function MonthlyView({
             </TabPill>
           ))}
         </div>
+        {!showOccupancyMetrics ? (
+          <p className="mt-3 text-xs text-rc-muted">
+            Occupazione, giorni liberi e prezzo medio sono disponibili da{" "}
+            {OCCUPANCY_METRICS_START_MONTH === 6 ? "giugno" : `mese ${OCCUPANCY_METRICS_START_MONTH}`}.
+          </p>
+        ) : null}
       </Card>
+
+      <Card title={`Appartamento — ${detail.label}`}>
+        <p className="mb-4 text-sm text-rc-muted">
+          Filtra ricavi e costi del mese per singolo appartamento o tutti insieme.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <TabPill
+            active={selectedPropertyId === "all"}
+            onClick={() => setSelectedPropertyId("all")}
+          >
+            Tutti
+          </TabPill>
+          {properties.map((property) => (
+            <TabPill
+              key={property.id}
+              active={selectedPropertyId === property.id}
+              onClick={() => setSelectedPropertyId(property.id)}
+            >
+              {property.name}
+            </TabPill>
+          ))}
+        </div>
+      </Card>
+
+      {propertyOccupancy ? (
+        <div className="grid gap-4 md:grid-cols-3">
+          <KpiCard
+            label="Occupazione"
+            value={formatPercent(propertyOccupancy.occupancyRate)}
+            hint={`${propertyOccupancy.bookedNights} / ${propertyOccupancy.daysInMonth} giorni`}
+            tone="neutral"
+            progress={propertyOccupancy.occupancyRate}
+            progressMax={1}
+            progressLabel="Notti occupate sul mese"
+          />
+          <KpiCard
+            label="Giorni ancora liberi"
+            value={String(propertyOccupancy.availableNights)}
+            hint={`Su ${propertyOccupancy.daysInMonth} giorni del mese`}
+            tone="neutral"
+          />
+          <KpiCard
+            label="Prezzo medio vendita"
+            value={formatCurrency(propertyOccupancy.averageDailyRate)}
+            hint="Lordo allocato ÷ notti prenotate"
+            tone="income"
+          />
+        </div>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <KpiCard
           label={`Incassi ${detail.label}`}
-          value={formatCurrency(detail.income)}
+          value={formatCurrency(scopedTotals.income)}
           tone="income"
-          progress={detail.income}
-          progressMax={detail.income + detail.expenses || 1}
-          progressLabel="Quota su flussi"
+          progress={scopedTotals.income}
+          progressMax={scopedTotals.income + scopedTotals.expenses || 1}
+          progressLabel={selectedPropertyName}
           sparklineColor={CHART_COLORS.income}
         />
         <KpiCard
           label={`Spese ${detail.label}`}
-          value={formatCurrency(detail.expenses)}
+          value={formatCurrency(scopedTotals.expenses)}
           tone="expense"
-          progress={detail.expenses}
-          progressMax={detail.income + detail.expenses || 1}
-          progressLabel="Quota su flussi"
+          progress={scopedTotals.expenses}
+          progressMax={scopedTotals.income + scopedTotals.expenses || 1}
+          progressLabel={selectedPropertyName}
           sparklineColor={CHART_COLORS.expense}
         />
         <KpiCard
           label="Profitto"
-          value={formatCurrency(detail.profit)}
-          tone={detail.profit >= 0 ? "positive" : "negative"}
-          progress={Math.max(detail.profit, 0)}
-          progressMax={detail.income || 1}
+          value={formatCurrency(scopedTotals.profit)}
+          tone={scopedTotals.profit >= 0 ? "positive" : "negative"}
+          progress={Math.max(scopedTotals.profit, 0)}
+          progressMax={scopedTotals.income || 1}
           progressLabel="Su incassi"
         />
         <KpiCard
@@ -245,99 +373,163 @@ export function MonthlyView({
                 : "negative"
               : "neutral"
           }
-          progress={detail.profit}
+          progress={scopedTotals.profit}
           progressMax={detail.target}
           progressLabel="Obiettivo mese"
         />
         <KpiCard
           label="Margine"
-          value={formatPercent(detail.margin)}
+          value={formatPercent(scopedTotals.margin)}
           tone="neutral"
-          progress={detail.margin}
+          progress={scopedTotals.margin}
           progressMax={1}
           progressLabel="Margine operativo"
         />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Card title={`Totale mese — incassi per OTA (${detail.label})`}>
+        <Card
+          title={`Incassi per voce — ${detail.label}`}
+          subtitle={selectedPropertyName}
+        >
           <VoiceListTable
             title="OTA"
-            description="Ricavi suddivisi per tipo di prenotazione nel mese selezionato."
-            headers={["OTA", "Importo", "Quota"]}
-            rows={totalPlatforms}
-            total={detail.income}
+            description="Ricavi per piattaforma nel mese selezionato."
+            headers={["Voce", "Importo", "Quota"]}
+            rows={totalPlatforms.filter((row) => row.total > 0)}
+            total={scopedTotals.income}
           />
         </Card>
 
-        <Card title={`Totale mese — spese per voce (${detail.label})`}>
+        <Card
+          title={`Spese per voce — ${detail.label}`}
+          subtitle={selectedPropertyName}
+        >
           <VoiceListTable
             title="Voci"
-            description="Costi suddivisi per tutte le categorie di spesa nel mese selezionato."
+            description="Costi per categoria nel mese selezionato."
             headers={["Voce", "Importo", "Quota"]}
-            rows={totalCategories}
-            total={detail.expenses}
+            rows={totalCategories.filter((row) => row.total > 0)}
+            total={scopedTotals.expenses}
           />
         </Card>
       </div>
 
-      <Card title={`Appartamenti — ${detail.label}`}>
-        <p className="mb-4 text-sm text-rc-muted">
-          Incassi, spese e profitto di ogni appartamento nel mese selezionato.
-        </p>
-        <DataTable
-          headers={[
-            "Appartamento",
-            "Incassi",
-            "Spese",
-            "Profitto",
-            "Margine",
-          ]}
-        >
-          {propertiesMonthBreakdown.map((property) => (
-            <DataRow key={property.id}>
-              <td className="px-2 py-2 font-medium text-rc-ink">
-                {property.name}
+      {selectedPropertyId === "all" ? (
+        <Card title={`Appartamenti — ${detail.label}`}>
+          <p className="mb-4 text-sm text-rc-muted">
+            Incassi, spese e profitto di ogni appartamento nel mese selezionato.
+            {showOccupancyMetrics
+              ? " Da giugno: occupazione, giorni liberi e prezzo medio."
+              : ""}
+          </p>
+          <DataTable
+            headers={
+              showOccupancyMetrics
+                ? [
+                    "Appartamento",
+                    "Incassi",
+                    "Spese",
+                    "Profitto",
+                    "Margine",
+                    "Occupazione",
+                    "Giorni liberi",
+                    "Prezzo medio",
+                  ]
+                : [
+                    "Appartamento",
+                    "Incassi",
+                    "Spese",
+                    "Profitto",
+                    "Margine",
+                  ]
+            }
+          >
+            {propertiesMonthBreakdown.map((property) => {
+              const occupancy = showOccupancyMetrics
+                ? getPropertyMonthOccupancy(
+                    bookings,
+                    monthPeriod,
+                    property.id,
+                  )
+                : null;
+
+              return (
+                <DataRow key={property.id}>
+                  <td className="px-2 py-2 font-medium text-rc-ink">
+                    <button
+                      type="button"
+                      className="text-left transition hover:text-rc-gold-light"
+                      onClick={() => setSelectedPropertyId(property.id)}
+                    >
+                      {property.name}
+                    </button>
+                  </td>
+                  <td className="px-2 py-2">
+                    <Money value={property.income} />
+                  </td>
+                  <td className="px-2 py-2">
+                    <Money value={property.expenses} />
+                  </td>
+                  <td className="px-2 py-2">
+                    <Money value={property.profit} />
+                  </td>
+                  <td className="px-2 py-2">
+                    <Percent value={property.margin} />
+                  </td>
+                  {occupancy ? (
+                    <>
+                      <td className="px-2 py-2">
+                        <Percent value={occupancy.occupancyRate} />
+                      </td>
+                      <td className="px-2 py-2 tabular-nums">
+                        {occupancy.availableNights}
+                      </td>
+                      <td className="px-2 py-2">
+                        {occupancy.averageDailyRate > 0 ? (
+                          <Money value={occupancy.averageDailyRate} />
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    </>
+                  ) : null}
+                </DataRow>
+              );
+            })}
+            <DataRow>
+              <td className="px-2 py-2 font-semibold text-rc-gold-light">
+                Totale mese
               </td>
-              <td className="px-2 py-2">
-                <Money value={property.income} />
+              <td className="px-2 py-2 font-semibold">
+                <Money value={monthTotals.income} />
               </td>
-              <td className="px-2 py-2">
-                <Money value={property.expenses} />
+              <td className="px-2 py-2 font-semibold">
+                <Money value={monthTotals.expenses} />
               </td>
-              <td className="px-2 py-2">
-                <Money value={property.profit} />
+              <td className="px-2 py-2 font-semibold">
+                <Money value={monthTotals.profit} />
               </td>
-              <td className="px-2 py-2">
-                <Percent value={property.margin} />
+              <td className="px-2 py-2 font-semibold">
+                <Percent
+                  value={
+                    monthTotals.income > 0
+                      ? monthTotals.profit / monthTotals.income
+                      : 0
+                  }
+                />
               </td>
+              {showOccupancyMetrics ? (
+                <>
+                  <td className="px-2 py-2" />
+                  <td className="px-2 py-2" />
+                  <td className="px-2 py-2" />
+                </>
+              ) : null}
             </DataRow>
-          ))}
-          <DataRow>
-            <td className="px-2 py-2 font-semibold text-rc-gold-light">
-              Totale mese
-            </td>
-            <td className="px-2 py-2 font-semibold">
-              <Money value={monthTotals.income} />
-            </td>
-            <td className="px-2 py-2 font-semibold">
-              <Money value={monthTotals.expenses} />
-            </td>
-            <td className="px-2 py-2 font-semibold">
-              <Money value={monthTotals.profit} />
-            </td>
-            <td className="px-2 py-2 font-semibold">
-              <Percent
-                value={
-                  monthTotals.income > 0
-                    ? monthTotals.profit / monthTotals.income
-                    : 0
-                }
-              />
-            </td>
-          </DataRow>
-        </DataTable>
-      </Card>
+          </DataTable>
+        </Card>
+      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title={`Incassi per appartamento e OTA — ${detail.label}`}>
@@ -383,10 +575,16 @@ export function MonthlyView({
         ) : (
           <>
             <div className="mb-4 flex flex-wrap gap-2">
+              <TabPill
+                active={selectedPropertyId === "all"}
+                onClick={() => setSelectedPropertyId("all")}
+              >
+                Tutti
+              </TabPill>
               {properties.map((property) => (
                 <TabPill
                   key={property.id}
-                  active={activeProperty?.id === property.id}
+                  active={selectedPropertyId === property.id}
                   onClick={() => setSelectedPropertyId(property.id)}
                 >
                   {property.name}
