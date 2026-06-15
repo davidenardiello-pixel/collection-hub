@@ -21,6 +21,7 @@ import {
   OCCUPANCY_METRICS_START_MONTH,
 } from "@/lib/constants";
 import {
+  formatDateRangeItalian,
   getPropertyMonthOccupancy,
   occupancyMetricsAvailable,
 } from "@/lib/occupancy";
@@ -304,29 +305,108 @@ export function MonthlyView({
       </Card>
 
       {propertyOccupancy ? (
-        <div className="grid gap-4 md:grid-cols-3">
-          <KpiCard
-            label="Occupazione"
-            value={formatPercent(propertyOccupancy.occupancyRate)}
-            hint={`${propertyOccupancy.bookedNights} giorni occupati su ${propertyOccupancy.daysInMonth} (prenotazioni del mese)`}
-            tone="neutral"
-            progress={propertyOccupancy.occupancyRate}
-            progressMax={1}
-            progressLabel="Giorni occupati sul mese"
-          />
-          <KpiCard
-            label="Giorni ancora liberi"
-            value={String(propertyOccupancy.availableNights)}
-            hint="Come in Incassi: date check-in → check-out"
-            tone="neutral"
-          />
-          <KpiCard
-            label="Prezzo medio vendita"
-            value={formatCurrency(propertyOccupancy.averageDailyRate)}
-            hint="Lordo del mese ÷ giorni occupati"
-            tone="income"
-          />
-        </div>
+        <>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <KpiCard
+              label="Occupazione attuale"
+              value={formatPercent(propertyOccupancy.occupancyRate)}
+              hint={`${propertyOccupancy.bookedNights} giorni occupati su ${propertyOccupancy.daysInMonth}`}
+              tone="neutral"
+              progress={propertyOccupancy.occupancyRate}
+              progressMax={1}
+              progressLabel="Sul mese"
+            />
+            <KpiCard
+              label="Giorni liberi (totale)"
+              value={String(propertyOccupancy.availableNights)}
+              hint={
+                propertyOccupancy.pastFreeDays > 0
+                  ? `${propertyOccupancy.pastFreeDays} già passati · ${propertyOccupancy.potentialBookableDays} ancora da occupare`
+                  : `${propertyOccupancy.potentialBookableDays} ancora da occupare`
+              }
+              tone="neutral"
+            />
+            <KpiCard
+              label="Ancora occupabili"
+              value={String(propertyOccupancy.potentialBookableDays)}
+              hint="Giorni liberi da oggi a fine mese"
+              tone={
+                propertyOccupancy.potentialBookableDays > 0 ? "positive" : "neutral"
+              }
+            />
+            <KpiCard
+              label="Occupazione potenziale max"
+              value={formatPercent(propertyOccupancy.potentialMaxOccupancyRate)}
+              hint="Se riempi tutti i giorni ancora liberi"
+              tone="neutral"
+              progress={propertyOccupancy.potentialMaxOccupancyRate}
+              progressMax={1}
+              progressLabel="Massimo raggiungibile"
+            />
+            <KpiCard
+              label="Margine occupazione"
+              value={formatPercent(propertyOccupancy.remainingOccupancyPotential)}
+              hint="% del mese ancora prenotabile"
+              tone="neutral"
+            />
+            <KpiCard
+              label="Prezzo medio vendita"
+              value={formatCurrency(propertyOccupancy.averageDailyRate)}
+              hint="Lordo del mese ÷ giorni occupati"
+              tone="income"
+            />
+          </div>
+
+          <Card title="Finestre libere sul calendario">
+            <p className="mb-4 text-sm text-rc-muted">
+              Riferimento:{" "}
+              {new Date(propertyOccupancy.referenceDate).toLocaleDateString(
+                "it-IT",
+                { weekday: "long", day: "numeric", month: "long" },
+              )}
+              . I giorni liberi già trascorsi non sono recuperabili.
+            </p>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-rc-muted">
+                  Ancora occupabili ({propertyOccupancy.potentialBookableDays})
+                </p>
+                {propertyOccupancy.potentialBookableRanges.length > 0 ? (
+                  <ul className="mt-2 space-y-1 text-sm text-rc-ink">
+                    {propertyOccupancy.potentialBookableRanges.map((range) => (
+                      <li key={`${range.start}-${range.end}`}>
+                        {formatDateRangeItalian(range)}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-sm text-rc-muted">
+                    Nessuna finestra libera futura in questo mese.
+                  </p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-rc-muted">
+                  Già passati senza prenotazione (
+                  {propertyOccupancy.pastFreeDays})
+                </p>
+                {propertyOccupancy.pastFreeRanges.length > 0 ? (
+                  <ul className="mt-2 space-y-1 text-sm text-rc-muted">
+                    {propertyOccupancy.pastFreeRanges.map((range) => (
+                      <li key={`${range.start}-${range.end}`}>
+                        {formatDateRangeItalian(range)}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-sm text-rc-muted">
+                    Nessun giorno libero già trascorso.
+                  </p>
+                )}
+              </div>
+            </div>
+          </Card>
+        </>
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
@@ -434,6 +514,8 @@ export function MonthlyView({
                     "Margine",
                     "Occupazione",
                     "Giorni liberi",
+                    "Da occupare",
+                    "Occ. potenz.",
                     "Prezzo medio",
                   ]
                 : [
@@ -484,6 +566,18 @@ export function MonthlyView({
                       </td>
                       <td className="px-2 py-2 tabular-nums">
                         {occupancy.availableNights}
+                        {occupancy.pastFreeDays > 0 ? (
+                          <span className="text-xs text-rc-muted">
+                            {" "}
+                            ({occupancy.potentialBookableDays} occ.)
+                          </span>
+                        ) : null}
+                      </td>
+                      <td className="px-2 py-2 tabular-nums">
+                        {occupancy.potentialBookableDays}
+                      </td>
+                      <td className="px-2 py-2">
+                        <Percent value={occupancy.potentialMaxOccupancyRate} />
                       </td>
                       <td className="px-2 py-2">
                         {occupancy.averageDailyRate > 0 ? (
