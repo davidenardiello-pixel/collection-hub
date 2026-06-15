@@ -1,5 +1,5 @@
-import { getFiscalBookingAllocations } from "./booking-allocation";
-import { getBookingNights, sumBookingsInPeriod } from "./calculations";
+import { countBookingNightsInCalendarPeriod } from "./booking-allocation";
+import { sumBookingsInPeriod } from "./calculations";
 import { OCCUPANCY_METRICS_START_MONTH } from "./constants";
 import type { Booking, MonthPeriod } from "./types";
 
@@ -11,35 +11,33 @@ function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }
 
-export function getBookedNightsInPeriod(
+/** Totali Excel / rendita mensile: non sono soggiorni reali per l'occupazione. */
+export function isOccupancyEligibleBooking(booking: Booking): boolean {
+  if (booking.importedFromExcel && booking.legacyIncomeAttribution) {
+    return false;
+  }
+
+  return true;
+}
+
+export function countCalendarNightsInPeriod(
   bookings: Booking[],
   period: MonthPeriod,
   propertyId?: string,
 ): number {
-  const scoped = propertyId
-    ? bookings.filter((booking) => booking.propertyId === propertyId)
-    : bookings;
+  const scoped = bookings.filter(
+    (booking) =>
+      (!propertyId || booking.propertyId === propertyId) &&
+      isOccupancyEligibleBooking(booking),
+  );
 
   let total = 0;
 
   for (const booking of scoped) {
-    const nights = getBookingNights(booking);
-
-    if (nights <= 0) {
-      continue;
-    }
-
-    for (const allocation of getFiscalBookingAllocations(booking)) {
-      if (
-        allocation.period.year === period.year &&
-        allocation.period.month === period.month
-      ) {
-        total += allocation.share * nights;
-      }
-    }
+    total += countBookingNightsInCalendarPeriod(booking, period);
   }
 
-  return Math.round(total * 100) / 100;
+  return total;
 }
 
 export interface PropertyMonthOccupancy {
@@ -57,7 +55,7 @@ export function getPropertyMonthOccupancy(
   propertyId: string,
 ): PropertyMonthOccupancy {
   const daysInMonth = getDaysInMonth(period.year, period.month);
-  const bookedNights = getBookedNightsInPeriod(bookings, period, propertyId);
+  const bookedNights = countCalendarNightsInPeriod(bookings, period, propertyId);
   const propertyBookings = bookings.filter(
     (booking) => booking.propertyId === propertyId,
   );

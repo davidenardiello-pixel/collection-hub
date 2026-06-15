@@ -308,7 +308,7 @@ export function MonthlyView({
           <KpiCard
             label="Occupazione"
             value={formatPercent(propertyOccupancy.occupancyRate)}
-            hint={`${propertyOccupancy.bookedNights} / ${propertyOccupancy.daysInMonth} giorni`}
+            hint={`${propertyOccupancy.bookedNights} notti occupate su ${propertyOccupancy.daysInMonth} (date reali)`}
             tone="neutral"
             progress={propertyOccupancy.occupancyRate}
             progressMax={1}
@@ -317,7 +317,7 @@ export function MonthlyView({
           <KpiCard
             label="Giorni ancora liberi"
             value={String(propertyOccupancy.availableNights)}
-            hint={`Su ${propertyOccupancy.daysInMonth} giorni del mese`}
+            hint="Giorni del mese senza ospite (check-in → check-out)"
             tone="neutral"
           />
           <KpiCard

@@ -62,6 +62,15 @@ function countNightsByMonth(booking: Booking): Map<string, number> {
   return counts;
 }
 
+/** Notti reali di soggiorno nel mese (date check-in → check-out, non competenza incasso). */
+export function countBookingNightsInCalendarPeriod(
+  booking: Booking,
+  period: MonthPeriod,
+): number {
+  const counts = countNightsByMonth(booking);
+  return counts.get(periodKey(period)) ?? 0;
+}
+
 function allocationsFromNightSplit(booking: Booking): BookingAllocation[] {
   const nightCounts = countNightsByMonth(booking);
   const totalNights = getBookingNights(booking);
