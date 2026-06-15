@@ -98,6 +98,22 @@ export function IncomeView({
 
   return (
     <div className="space-y-6">
+      <BookingForm
+        key={editing?.id ?? "new"}
+        properties={properties}
+        platforms={platforms}
+        editing={editing}
+        onSubmit={(booking) => {
+          if (editing) {
+            onUpdate(editing.id, booking);
+            setEditing(null);
+          } else {
+            onAdd(booking);
+          }
+        }}
+        onCancelEdit={() => setEditing(null)}
+      />
+
       <Card title="Filtra incassi">
         <p className="mb-4 text-sm text-rc-muted">
           Restringi la vista per appartamento, mese, piattaforma o testo. La
@@ -314,22 +330,6 @@ export function IncomeView({
           </div>
         )}
       </Card>
-
-      <BookingForm
-        key={editing?.id ?? "new"}
-        properties={properties}
-        platforms={platforms}
-        editing={editing}
-        onSubmit={(booking) => {
-          if (editing) {
-            onUpdate(editing.id, booking);
-            setEditing(null);
-          } else {
-            onAdd(booking);
-          }
-        }}
-        onCancelEdit={() => setEditing(null)}
-      />
 
       <Card
         title="Matrice incassi per piattaforma"

@@ -95,6 +95,22 @@ export function ExpensesView({
 
   return (
     <div className="space-y-6">
+      <ExpenseForm
+        key={editing?.id ?? "new"}
+        properties={properties}
+        expenseCategories={expenseCategories}
+        editing={editing}
+        onSubmit={(expense) => {
+          if (editing) {
+            onUpdate(editing.id, expense);
+            setEditing(null);
+          } else {
+            onAdd(expense);
+          }
+        }}
+        onCancelEdit={() => setEditing(null)}
+      />
+
       <Card title="Filtra spese">
         <p className="mb-4 text-sm text-rc-muted">
           Restringi per appartamento, mese, categoria o testo. La lista, il
@@ -283,22 +299,6 @@ export function ExpensesView({
           </div>
         )}
       </Card>
-
-      <ExpenseForm
-        key={editing?.id ?? "new"}
-        properties={properties}
-        expenseCategories={expenseCategories}
-        editing={editing}
-        onSubmit={(expense) => {
-          if (editing) {
-            onUpdate(editing.id, expense);
-            setEditing(null);
-          } else {
-            onAdd(expense);
-          }
-        }}
-        onCancelEdit={() => setEditing(null)}
-      />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card
