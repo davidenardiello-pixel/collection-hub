@@ -43,6 +43,13 @@ function nextMonth(period: MonthPeriod): MonthPeriod {
   return { year: period.year, month: period.month + 1 };
 }
 
+function formatDateIso(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function countNightsByMonth(booking: Booking): Map<string, number> {
   const start = parseDate(booking.checkIn);
   const end = parseDate(booking.checkOut);
@@ -62,13 +69,36 @@ function countNightsByMonth(booking: Booking): Map<string, number> {
   return counts;
 }
 
+/** Giorni di calendario occupati nel mese (check-in incluso, check-out escluso). */
+export function getOccupiedCalendarDatesInPeriod(
+  booking: Booking,
+  period: MonthPeriod,
+): string[] {
+  const dates: string[] = [];
+  const start = parseDate(booking.checkIn);
+  const end = parseDate(booking.checkOut);
+  const cursor = new Date(start);
+
+  while (cursor < end) {
+    if (
+      cursor.getFullYear() === period.year &&
+      cursor.getMonth() + 1 === period.month
+    ) {
+      dates.push(formatDateIso(cursor));
+    }
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return dates;
+}
+
 /** Notti reali di soggiorno nel mese (date check-in → check-out, non competenza incasso). */
 export function countBookingNightsInCalendarPeriod(
   booking: Booking,
   period: MonthPeriod,
 ): number {
-  const counts = countNightsByMonth(booking);
-  return counts.get(periodKey(period)) ?? 0;
+  return getOccupiedCalendarDatesInPeriod(booking, period).length;
 }
 
 function allocationsFromNightSplit(booking: Booking): BookingAllocation[] {

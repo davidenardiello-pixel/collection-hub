@@ -1,4 +1,7 @@
-import { countBookingNightsInCalendarPeriod } from "./booking-allocation";
+import {
+  bookingAppliesToPeriod,
+  getOccupiedCalendarDatesInPeriod,
+} from "./booking-allocation";
 import { sumBookingsInPeriod } from "./calculations";
 import { OCCUPANCY_METRICS_START_MONTH } from "./constants";
 import type { Booking, MonthPeriod } from "./types";
@@ -20,24 +23,36 @@ export function isOccupancyEligibleBooking(booking: Booking): boolean {
   return true;
 }
 
-export function countCalendarNightsInPeriod(
+/**
+ * Occupazione = stesse prenotazioni visibili in Incassi per il mese (competenza),
+ * con date check-in → check-out sul calendario. Giorni unici (no doppio conteggio).
+ */
+export function countUniqueOccupiedDaysInPeriod(
   bookings: Booking[],
   period: MonthPeriod,
   propertyId?: string,
 ): number {
-  const scoped = bookings.filter(
-    (booking) =>
-      (!propertyId || booking.propertyId === propertyId) &&
-      isOccupancyEligibleBooking(booking),
-  );
+  const occupiedDates = new Set<string>();
 
-  let total = 0;
+  for (const booking of bookings) {
+    if (propertyId && booking.propertyId !== propertyId) {
+      continue;
+    }
 
-  for (const booking of scoped) {
-    total += countBookingNightsInCalendarPeriod(booking, period);
+    if (!isOccupancyEligibleBooking(booking)) {
+      continue;
+    }
+
+    if (!bookingAppliesToPeriod(booking, period)) {
+      continue;
+    }
+
+    for (const date of getOccupiedCalendarDatesInPeriod(booking, period)) {
+      occupiedDates.add(date);
+    }
   }
 
-  return total;
+  return occupiedDates.size;
 }
 
 export interface PropertyMonthOccupancy {
@@ -55,7 +70,11 @@ export function getPropertyMonthOccupancy(
   propertyId: string,
 ): PropertyMonthOccupancy {
   const daysInMonth = getDaysInMonth(period.year, period.month);
-  const bookedNights = countCalendarNightsInPeriod(bookings, period, propertyId);
+  const bookedNights = countUniqueOccupiedDaysInPeriod(
+    bookings,
+    period,
+    propertyId,
+  );
   const propertyBookings = bookings.filter(
     (booking) => booking.propertyId === propertyId,
   );
