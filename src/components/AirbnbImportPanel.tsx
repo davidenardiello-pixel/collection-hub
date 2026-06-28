@@ -27,13 +27,15 @@ function getDefaultImportMonth(): number {
 
 function previewDerivedAmounts(
   preview: AirbnbSyncPreview,
-  airbnbCommissionRate: number,
+  property?: Property,
 ) {
+  const commissionRate = getAirbnbCommissionRate(property);
+
   return preview.reservations.map((reservation) => ({
     reservation,
     amounts: deriveAirbnbBookingAmounts(
       reservation.netEarnings,
-      airbnbCommissionRate,
+      commissionRate,
     ),
   }));
 }
@@ -128,18 +130,18 @@ export function AirbnbImportPanel({
   const selectedProperty = properties.find((item) => item.id === propertyId);
   const airbnbCommissionRate = getAirbnbCommissionRate(selectedProperty);
   const previewRows = preview
-    ? previewDerivedAmounts(preview, airbnbCommissionRate)
+    ? previewDerivedAmounts(preview, selectedProperty)
     : [];
 
   return (
     <Card title="Import Airbnb">
       <p className="mb-4 text-sm text-rc-muted">
         Carica l&apos;export prenotazioni Airbnb (.csv). Il campo{" "}
-        <strong>Guadagni</strong> è il netto host. Per questo appartamento la
-        commissione Airbnb è{" "}
-        <strong>{(airbnbCommissionRate * 100).toFixed(1).replace(".0", "")}%</strong>
-        + IVA 22%: lordo fattura = netto ÷{" "}
-        {(1 - airbnbCommissionRate * 1.22).toFixed(4)}.
+        <strong>Guadagni</strong> è il netto host (dopo commissione{" "}
+        {(airbnbCommissionRate * 100).toFixed(1).replace(".0", "")}%). Il{" "}
+        <strong>lordo totale cliente</strong> (pulizie incluse) si ricostruisce
+        come Guadagni ÷ {(1 - airbnbCommissionRate).toFixed(3)}; sull&apos;incasso
+        si scorpora poi l&apos;IVA soggiorno 10%.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -221,7 +223,7 @@ export function AirbnbImportPanel({
                 previewRows.map((row) => row.amounts.hostNet),
               ),
             )}{" "}
-            · lordo prenotazione{" "}
+            · lordo cliente{" "}
             {formatCurrency(
               sumReservationMoney(
                 previewRows.map((row) => row.amounts.grossIncome),

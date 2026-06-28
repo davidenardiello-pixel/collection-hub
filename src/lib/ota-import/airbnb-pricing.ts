@@ -25,7 +25,10 @@ export function airbnbHostNetToGrossRatio(commissionRate: number): number {
   return 1 - airbnbCommissionTotalIncidence(commissionRate);
 }
 
-/** Lordo prenotazione (importo da fatturare) dal netto host. */
+/**
+ * Lordo fiscale “ampio” (commissione 15,5% + IVA 22% sull’imponibile commissione).
+ * Non usare per il totale pagato dal cliente: usare guestTotalFromAirbnbHostNet.
+ */
 export function grossBookingFromAirbnbHostNet(
   hostNet: number,
   commissionRate = DEFAULT_AIRBNB_COMMISSION_RATE,
@@ -40,7 +43,24 @@ export function grossBookingFromAirbnbHostNet(
   return roundMoney(net / ratio);
 }
 
-/** Commissione Airbnb totale (imponibile + IVA 22%) = lordo − netto host. */
+/**
+ * Lordo totale pagato dal cliente (pulizie incluse), ricostruito da Guadagni CSV:
+ * Guadagni = lordo × (1 − commissione%) → lordo = Guadagni ÷ (1 − commissione%).
+ */
+export function guestTotalFromAirbnbHostNet(
+  hostNet: number,
+  commissionRate = DEFAULT_AIRBNB_COMMISSION_RATE,
+): number {
+  const net = Math.max(0, Number(hostNet) || 0);
+
+  if (net <= 0 || commissionRate <= 0 || commissionRate >= 1) {
+    return 0;
+  }
+
+  return roundMoney(net / (1 - commissionRate));
+}
+
+/** Commissione Airbnb = lordo cliente − netto host (Guadagni). */
 export function airbnbTotalCommissionFromAmounts(
   grossIncome: number,
   hostNet: number,
@@ -97,7 +117,7 @@ export function deriveAirbnbBookingAmounts(
   commissionRate = DEFAULT_AIRBNB_COMMISSION_RATE,
 ): AirbnbDerivedAmounts {
   const net = roundMoney(Math.max(0, Number(hostNet) || 0));
-  const grossIncome = grossBookingFromAirbnbHostNet(net, commissionRate);
+  const grossIncome = guestTotalFromAirbnbHostNet(net, commissionRate);
   const otaCommission = airbnbTotalCommissionFromAmounts(grossIncome, net);
 
   return {

@@ -190,7 +190,7 @@ export function syncAirbnbReservations(
       locked: shouldLock,
       importedFromExcel: false,
       legacyIncomeAttribution: false,
-      notes: `Import Airbnb — netto host ${amounts.hostNet.toFixed(2)} €, lordo prenotazione ${amounts.grossIncome.toFixed(2)} € (ricostruito da Guadagni CSV)`,
+      notes: `Import Airbnb — Guadagni ${amounts.hostNet.toFixed(2)} € (netto host), lordo cliente ${amounts.grossIncome.toFixed(2)} € (ricostruito ÷ ${(1 - amounts.commissionRate).toFixed(3)})`,
     };
 
     if (existing) {

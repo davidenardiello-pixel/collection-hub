@@ -1,5 +1,6 @@
 import { normalizeDashboardData } from "./migrate";
 import { createSeedData } from "./seed";
+import { formatStoreError } from "./store-errors";
 import { getSupabaseAdmin } from "./supabase/server";
 import type { DashboardData } from "./types";
 
@@ -17,7 +18,7 @@ export async function loadDashboardFromStore(): Promise<{
     .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(formatStoreError(error));
   }
 
   if (!data) {
@@ -56,7 +57,7 @@ export async function saveDashboardToStore(
   });
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(formatStoreError(error));
   }
 
   return {

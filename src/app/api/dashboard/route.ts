@@ -6,7 +6,10 @@ import {
   saveDashboardToStore,
 } from "@/lib/dashboard-store";
 import { normalizeDashboardData } from "@/lib/migrate";
+import { formatStoreError } from "@/lib/store-errors";
 import type { DashboardData } from "@/lib/types";
+
+export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   if (!(await requireApiAuth(request))) {
@@ -17,9 +20,10 @@ export async function GET(request: NextRequest) {
     const result = await loadDashboardFromStore();
     return NextResponse.json(result);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Errore nel caricamento dati.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: formatStoreError(error) },
+      { status: 500 },
+    );
   }
 }
 
@@ -33,8 +37,9 @@ export async function PUT(request: NextRequest) {
     const saved = await saveDashboardToStore(normalizeDashboardData(body));
     return NextResponse.json(saved);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Errore nel salvataggio dati.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: formatStoreError(error) },
+      { status: 500 },
+    );
   }
 }

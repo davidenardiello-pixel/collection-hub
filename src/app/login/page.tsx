@@ -1,15 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { BrandTitle } from "@/components/BrandTitle";
 import { Button, Card, Field, Input } from "@/components/ui";
 import { BRAND } from "@/lib/brand";
 
-function LoginForm() {
+export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -22,6 +21,9 @@ function LoginForm() {
         if (!body.cloud) {
           router.replace("/");
         }
+      })
+      .catch(() => {
+        setError("Impossibile verificare la configurazione del server.");
       })
       .finally(() => setCheckingMode(false));
   }, [router]);
@@ -53,9 +55,11 @@ function LoginForm() {
         return;
       }
 
-      const next = searchParams.get("next") || "/";
-      router.replace(next);
-      router.refresh();
+      const next =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("next") || "/"
+          : "/";
+      window.location.href = next;
     } catch {
       setError("Impossibile contattare il server. Riprova.");
     } finally {
@@ -107,19 +111,5 @@ function LoginForm() {
         </Card>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center text-rc-muted">
-          Caricamento accesso...
-        </div>
-      }
-    >
-      <LoginForm />
-    </Suspense>
   );
 }

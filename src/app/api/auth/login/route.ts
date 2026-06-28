@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDashboardPassword } from "@/lib/env";
-import { createSessionToken, setSessionCookie } from "@/lib/session";
+import { attachSessionCookie, createSessionToken } from "@/lib/session";
 
 export async function POST(request: Request) {
   try {
@@ -15,9 +15,9 @@ export async function POST(request: Request) {
     }
 
     const token = await createSessionToken();
-    await setSessionCookie(token);
-
-    return NextResponse.json({ ok: true });
+    const response = NextResponse.json({ ok: true });
+    attachSessionCookie(response, token);
+    return response;
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Configurazione server incompleta.";

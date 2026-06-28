@@ -51,7 +51,37 @@ async function fetchDashboard(): Promise<{
   data: DashboardData;
   updatedAt: string;
 }> {
-  const response = await fetch("/api/dashboard", { cache: "no-store" });
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 30_000);
+
+  let response: Response;
+  try {
+    response = await fetch("/api/dashboard", {
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch (fetchError) {
+    if (fetchError instanceof DOMException && fetchError.name === "AbortError") {
+      throw new Error(
+        "Il server impiega troppo tempo. Riprova o controlla le variabili Vercel/Supabase.",
+      );
+    }
+
+    throw new Error("Impossibile contattare il server.");
+  } finally {
+    window.clearTimeout(timeout);
+  }
+
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    if (response.status === 401) {
+      window.location.href = "/login?next=/";
+      throw new Error("Sessione scaduta. Accedi di nuovo.");
+    }
+
+    throw new Error("Risposta server non valida. Prova a ricaricare la pagina.");
+  }
+
   const body = (await response.json()) as {
     data?: DashboardData;
     updatedAt?: string;
@@ -59,6 +89,11 @@ async function fetchDashboard(): Promise<{
   };
 
   if (!response.ok || !body.data || !body.updatedAt) {
+    if (response.status === 401) {
+      window.location.href = "/login?next=/";
+      throw new Error("Sessione scaduta. Accedi di nuovo.");
+    }
+
     throw new Error(body.error ?? "Caricamento dati non riuscito.");
   }
 

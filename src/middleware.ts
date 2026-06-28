@@ -28,6 +28,14 @@ export async function middleware(request: NextRequest) {
   const isAuthenticated = await isAuthenticatedRequest(token);
   const isPublic = PUBLIC_PATHS.includes(pathname);
 
+  if (pathname.startsWith("/api/")) {
+    if (isPublic || isAuthenticated) {
+      return NextResponse.next();
+    }
+
+    return NextResponse.json({ error: "Non autorizzato." }, { status: 401 });
+  }
+
   if (!isAuthenticated && !isPublic) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", pathname);
