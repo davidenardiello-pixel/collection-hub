@@ -92,15 +92,6 @@ export function deduplicateOverlappingExpenses(
       );
     }
 
-    if (isLinkedCleaningExpense(expense)) {
-      return !hasManualCategoryInMonth(
-        data.expenses,
-        expense.propertyId,
-        "pulizie",
-        period,
-      );
-    }
-
     if (expense.automationId?.includes(":cleaning:")) {
       return !hasManualCategoryInMonth(
         data.expenses,

@@ -64,9 +64,10 @@ export function AutomationPanel({
     <Card title="Spese automatizzate">
       <p className="mb-4 text-sm text-rc-muted">
         Configura affitto, KrossBooking e pulizie per appartamento. Ogni
-        prenotazione (non Excel) genera una spesa pulizie collegata pari al
-        costo check-in impostato, nel mese del check-in. Affitto e Kross
-        richiedono il pulsante di sincronizzazione.
+        prenotazione importata (non Excel) genera una spesa pulizie collegata
+        pari al costo check-in impostato, nel mese del check-in. Usa
+        &quot;Genera / aggiorna&quot; anche per applicare le pulizie ai check-in
+        già caricati dopo aver impostato o modificato il costo.
       </p>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
@@ -215,6 +216,11 @@ function PropertyAutomationRow({
               const cleaningCostPerCheckIn = Number(event.target.value || 0);
               onSave(cleaningCostPerCheckIn, property.krossBookingMonthly);
             }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.currentTarget.blur();
+              }
+            }}
           />
         </Field>
         <Field label="KrossBooking mensile">
@@ -227,6 +233,11 @@ function PropertyAutomationRow({
             onBlur={(event) => {
               const krossBookingMonthly = Number(event.target.value || 0);
               onSave(property.cleaningCostPerCheckIn, krossBookingMonthly);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.currentTarget.blur();
+              }
             }}
           />
         </Field>

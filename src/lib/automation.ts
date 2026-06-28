@@ -1,4 +1,7 @@
-import { isLinkedCleaningExpense } from "./booking-cleaning";
+import {
+  isLinkedCleaningExpense,
+  syncMissingBookingCleaning,
+} from "./booking-cleaning";
 import { bookingAppliesToPeriod } from "./booking-allocation";
 import { hasManualCategoryInMonth } from "./expense-dedup";
 import {
@@ -259,11 +262,14 @@ export function syncAutomatedExpenses(data: DashboardData): {
     id: crypto.randomUUID(),
   }));
 
-  const preview = getAutomationPreview(data);
+  const synced = syncMissingBookingCleaning({
+    ...data,
+    expenses: [...manualExpenses, ...generated],
+  });
 
   return {
-    expenses: [...manualExpenses, ...generated],
-    preview,
+    expenses: synced.expenses,
+    preview: getAutomationPreview(synced),
   };
 }
 

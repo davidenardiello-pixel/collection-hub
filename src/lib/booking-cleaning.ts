@@ -1,6 +1,5 @@
 import { monthEndDate } from "./booking-allocation";
 import { getPeriodFromDate } from "./calculations";
-import { hasManualCategoryInMonth } from "./expense-dedup";
 import type { Booking, DashboardData, Expense, Property } from "./types";
 
 const CLEANING_CATEGORY_ID = "pulizie";
@@ -26,7 +25,6 @@ function getCleaningCompetencePeriod(booking: Booking) {
 export function buildCleaningExpenses(
   booking: Booking,
   properties: Property[],
-  expenses: Expense[] = [],
 ): Omit<Expense, "id">[] {
   if (booking.importedFromExcel || booking.legacyIncomeAttribution) {
     return [];
@@ -39,17 +37,6 @@ export function buildCleaningExpenses(
   }
 
   const period = getCleaningCompetencePeriod(booking);
-
-  if (
-    hasManualCategoryInMonth(
-      expenses,
-      booking.propertyId,
-      CLEANING_CATEGORY_ID,
-      period,
-    )
-  ) {
-    return [];
-  }
 
   return [
     {
@@ -78,7 +65,7 @@ export function upsertCleaningExpense(
         expense.linkedExpenseKind === "cleaning"
       ),
   );
-  const built = buildCleaningExpenses(booking, properties, withoutCleaning);
+  const built = buildCleaningExpenses(booking, properties);
 
   if (built.length === 0) {
     return withoutCleaning;
