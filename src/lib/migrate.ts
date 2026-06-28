@@ -13,6 +13,7 @@ import {
 } from "./booking-commission";
 import { deduplicateOverlappingExpenses } from "./expense-dedup";
 import { syncMissingBookingVat } from "./booking-vat";
+import { resyncAirbnbOtaBookings } from "./ota-import/airbnb";
 import {
   createEmptyProfitTargets,
   DEFAULT_CLEANING_COSTS,
@@ -191,11 +192,14 @@ export function normalizeDashboardData(
       ? raw.profitTargets.map((value) => Number(value) || 0)
       : createEmptyProfitTargets();
 
+  const properties = ensureProperties(raw?.properties, bookings, expenses);
+  const resyncedBookings = resyncAirbnbOtaBookings(bookings, properties);
+
   const normalized = {
-    bookings,
+    bookings: resyncedBookings,
     expenses,
-    properties: ensureProperties(raw?.properties, bookings, expenses),
-    platforms: ensurePlatforms(raw?.platforms, bookings),
+    properties,
+    platforms: ensurePlatforms(raw?.platforms, resyncedBookings),
     expenseCategories: ensureCategories(raw?.expenseCategories, expenses),
     profitTargets,
     automation: ensureAutomation(raw?.automation),

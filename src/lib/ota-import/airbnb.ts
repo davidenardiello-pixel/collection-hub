@@ -4,7 +4,7 @@ import {
   removeAllBookingLinkedExpenses,
   upsertAllBookingLinkedExpenses,
 } from "../booking-vat";
-import type { Booking, DashboardData, Expense } from "../types";
+import type { Booking, DashboardData, Expense, Property } from "../types";
 import { deriveAirbnbBookingAmounts, getAirbnbCommissionRate } from "./airbnb-pricing";
 
 export const AIRBNB_PLATFORM_ID = "airbnb";
@@ -121,6 +121,77 @@ function removeManualOtaMonthExpenses(
 
     return expense.categoryId !== "iva" && expense.categoryId !== "com-airbnb";
   });
+}
+
+export function hostNetFromAirbnbBooking(booking: Booking): number | null {
+  const fromNotes = booking.notes?.match(
+    /(?:Guadagni|netto host)\s+([\d.,]+)\s*€/i,
+  );
+  if (fromNotes) {
+    return (
+      Math.round(Number(fromNotes[1].replace(",", ".")) * 100) / 100
+    );
+  }
+
+  const gross = Math.max(0, Number(booking.grossIncome) || 0);
+  const commission = Math.max(0, Number(booking.otaCommission) || 0);
+  const inferred = Math.round((gross - commission) * 100) / 100;
+
+  return inferred > 0 ? inferred : null;
+}
+
+/** Ricalcola lordo/commissione import Airbnb con formula Guadagni ÷ (1 − rate). */
+export function resyncAirbnbOtaBooking(
+  booking: Booking,
+  property?: Property,
+): Booking {
+  if (
+    booking.importedFromExcel ||
+    booking.legacyIncomeAttribution ||
+    booking.platformId !== AIRBNB_PLATFORM_ID ||
+    !booking.otaImportScope?.startsWith(`${AIRBNB_IMPORT_PREFIX}:`)
+  ) {
+    return booking;
+  }
+
+  const hostNet = hostNetFromAirbnbBooking(booking);
+  if (hostNet == null) {
+    return booking;
+  }
+
+  const amounts = deriveAirbnbBookingAmounts(
+    hostNet,
+    getAirbnbCommissionRate(property),
+  );
+
+  if (
+    booking.grossIncome === amounts.grossIncome &&
+    booking.otaCommission === amounts.otaCommission
+  ) {
+    return booking;
+  }
+
+  return {
+    ...booking,
+    grossIncome: amounts.grossIncome,
+    cleaningFee: 0,
+    otaCommission: amounts.otaCommission,
+    notes: `Import Airbnb — Guadagni ${amounts.hostNet.toFixed(2)} € (netto host), lordo cliente ${amounts.grossIncome.toFixed(2)} € (ricostruito ÷ ${(1 - amounts.commissionRate).toFixed(3)})`,
+  };
+}
+
+export function resyncAirbnbOtaBookings(
+  bookings: Booking[],
+  properties: Property[],
+): Booking[] {
+  const propertyMap = new Map(properties.map((property) => [property.id, property]));
+
+  return bookings.map((booking) =>
+    resyncAirbnbOtaBooking(
+      booking,
+      propertyMap.get(booking.propertyId),
+    ),
+  );
 }
 
 export function syncAirbnbReservations(
