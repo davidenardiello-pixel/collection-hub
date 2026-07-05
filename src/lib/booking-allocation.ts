@@ -151,20 +151,9 @@ export function getBookingAllocations(booking: Booking): BookingAllocation[] {
     return getLegacyCheckInAllocation(booking);
   }
 
-  const checkIn = parseDate(booking.checkIn);
+  // Nuova regola: tutti i guadagni vanno al mese del check-in
   const checkInPeriod = getPeriodFromDate(booking.checkIn);
-  const lastDay = getLastDayOfMonth(checkInPeriod.year, checkInPeriod.month);
-  const day = checkIn.getDate();
-
-  if (day === lastDay) {
-    return [{ period: nextMonth(checkInPeriod), share: 1 }];
-  }
-
-  if (day === lastDay - 1) {
-    return allocationsFromNightSplit(booking);
-  }
-
-  return [{ period: getPeriodFromDate(booking.checkOut), share: 1 }];
+  return [{ period: checkInPeriod, share: 1 }];
 }
 
 export function getBookingShareInPeriod(
