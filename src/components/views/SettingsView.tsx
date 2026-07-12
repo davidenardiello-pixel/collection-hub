@@ -2,31 +2,34 @@
 
 import { useRef, useState } from "react";
 import { formatCurrency } from "@/lib/calculations";
-import { DEFAULT_AIRBNB_COMMISSION_RATE } from "@/lib/constants";
-import { downloadBackup } from "@/lib/backup";
 import {
+  BANK_ACCOUNT_OPTIONS,
+  DEFAULT_AIRBNB_COMMISSION_RATE,
+  DEFAULT_BANK_ACCOUNT,
   FISCAL_YEAR,
   MAX_EXPENSE_CATEGORIES,
   MAX_PLATFORMS,
   MAX_PROPERTIES,
   MONTH_LABELS,
 } from "@/lib/constants";
-import type { PurgeScope, PurgePreview } from "@/lib/purge";
-import { countPropertyLinkedTransactions } from "@/lib/property-removal";
 import type {
   Booking,
+  BankAccountId,
   DashboardData,
   Expense,
   ExpenseCategory,
   Platform,
   Property,
 } from "@/lib/types";
+import { downloadBackup } from "@/lib/backup";
+import type { PurgeScope, PurgePreview } from "@/lib/purge";
+import { countPropertyLinkedTransactions } from "@/lib/property-removal";
 import { AutomationPanel } from "../AutomationPanel";
 import { AirbnbImportPanel } from "../AirbnbImportPanel";
 import { BookingImportPanel } from "../BookingImportPanel";
 import { DataPurgePanel } from "../DataPurgePanel";
 import { ReportsPanel } from "../ReportsPanel";
-import { Button, Card, Field, Input } from "../ui";
+import { Button, Card, Field, Input, Select } from "../ui";
 
 export function SettingsView({
   data,
@@ -61,12 +64,17 @@ export function SettingsView({
   properties: Property[];
   platforms: Platform[];
   expenseCategories: ExpenseCategory[];
-  onAddProperty: (name: string, monthlyRent: number) => string | null;
+  onAddProperty: (
+    name: string,
+    monthlyRent: number,
+    bankAccount?: BankAccountId,
+  ) => string | null;
   onUpdateProperty: (
     id: string,
     name: string,
     monthlyRent: number,
     airbnbCommissionRate?: number,
+    bankAccount?: BankAccountId,
   ) => string | null;
   onRemoveProperty: (id: string) => string | null;
   onAddPlatform: (name: string) => string | null;
@@ -108,6 +116,8 @@ export function SettingsView({
   const [message, setMessage] = useState<string | null>(null);
   const [newPropertyName, setNewPropertyName] = useState("");
   const [newPropertyRent, setNewPropertyRent] = useState("");
+  const [newPropertyBankAccount, setNewPropertyBankAccount] =
+    useState<BankAccountId>(DEFAULT_BANK_ACCOUNT);
   const [newPlatformName, setNewPlatformName] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
 
@@ -272,10 +282,12 @@ export function SettingsView({
               const error = onAddProperty(
                 newPropertyName,
                 Number(newPropertyRent || 0),
+                newPropertyBankAccount,
               );
               if (!error) {
                 setNewPropertyName("");
                 setNewPropertyRent("");
+                setNewPropertyBankAccount(DEFAULT_BANK_ACCOUNT);
               }
               showResult(error, "Appartamento aggiunto.");
             }}
@@ -298,6 +310,20 @@ export function SettingsView({
                 placeholder="0.00"
               />
             </Field>
+            <Field label="Conto bancario">
+              <Select
+                value={newPropertyBankAccount}
+                onChange={(event) =>
+                  setNewPropertyBankAccount(event.target.value as BankAccountId)
+                }
+              >
+                {BANK_ACCOUNT_OPTIONS.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
             <Button type="submit">Aggiungi appartamento</Button>
           </form>
 
@@ -306,12 +332,13 @@ export function SettingsView({
               <PropertyRow
                 key={`${property.id}-${property.name}-${property.monthlyRent}`}
                 property={property}
-                onSave={(name, monthlyRent, airbnbCommissionRate) => {
+                onSave={(name, monthlyRent, airbnbCommissionRate, bankAccount) => {
                   const error = onUpdateProperty(
                     property.id,
                     name,
                     monthlyRent,
                     airbnbCommissionRate,
+                    bankAccount,
                   );
                   showResult(error, "Appartamento aggiornato.");
                 }}
@@ -440,11 +467,15 @@ function PropertyRow({
     name: string,
     monthlyRent: number,
     airbnbCommissionRate: number,
+    bankAccount: BankAccountId,
   ) => void;
   onRemove: () => void;
 }) {
   const [name, setName] = useState(property.name);
   const [monthlyRent, setMonthlyRent] = useState(String(property.monthlyRent));
+  const [bankAccount, setBankAccount] = useState<BankAccountId>(
+    property.bankAccount ?? DEFAULT_BANK_ACCOUNT,
+  );
   const [airbnbCommissionPercent, setAirbnbCommissionPercent] = useState(
     String(
       (property.airbnbCommissionRate ?? DEFAULT_AIRBNB_COMMISSION_RATE) * 100,
@@ -471,6 +502,20 @@ function PropertyRow({
           onChange={(event) => setAirbnbCommissionPercent(event.target.value)}
         />
       </Field>
+      <Field label="Conto bancario">
+        <Select
+          value={bankAccount}
+          onChange={(event) =>
+            setBankAccount(event.target.value as BankAccountId)
+          }
+        >
+          {BANK_ACCOUNT_OPTIONS.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+      </Field>
       <div className="flex gap-2">
         <Button
           variant="secondary"
@@ -479,6 +524,7 @@ function PropertyRow({
               name,
               Number(monthlyRent || 0),
               Number(airbnbCommissionPercent || 0) / 100,
+              bankAccount,
             )
           }
         >
@@ -489,8 +535,10 @@ function PropertyRow({
         </Button>
       </div>
       <p className="text-xs text-rc-muted">
-        Affitto: {formatCurrency(Number(monthlyRent || 0))} / mese · Airbnb{" "}
-        {airbnbCommissionPercent}% + IVA 22%
+        Affitto: {formatCurrency(Number(monthlyRent || 0))} / mese · Conto{" "}
+        {BANK_ACCOUNT_OPTIONS.find((option) => option.id === bankAccount)?.label ??
+          bankAccount}{" "}
+        · Airbnb {airbnbCommissionPercent}% + IVA 22%
       </p>
     </div>
   );

@@ -12,6 +12,11 @@ import {
   sumBookingsInPeriod,
 } from "@/lib/calculations";
 import { getAllocatedBookingAmount } from "@/lib/booking-allocation";
+import {
+  getBankAccountLabel,
+  getIncomeChannelSummary,
+  getPropertyBankAccount,
+} from "@/lib/bank-accounts";
 import { FISCAL_YEAR, MONTH_LABELS } from "@/lib/constants";
 import {
   describeActiveFilters,
@@ -23,6 +28,7 @@ import {
 import type { PurgePreview, PurgeScope } from "@/lib/purge";
 import type { Booking, Expense, Platform, Property } from "@/lib/types";
 import { BookingForm } from "../BookingForm";
+import { IncomeChannelSummaryCard } from "../IncomeChannelSummaryCard";
 import { MonthPropertyPurgeAction } from "../MonthPropertyPurgeAction";
 import { TransactionFilters } from "../TransactionFilters";
 import { Button, Card, DataRow, DataTable, EmptyState, Money } from "../ui";
@@ -75,6 +81,19 @@ export function IncomeView({
 
   const matrix = getPlatformMonthlyMatrix(filteredBookings, platforms);
   const filteredTotal = sumBookings(filteredBookings);
+  const channelSummary = useMemo(() => {
+    const period =
+      filters.month === "all"
+        ? undefined
+        : { year: FISCAL_YEAR, month: filters.month };
+
+    return getIncomeChannelSummary(
+      filteredBookings,
+      properties,
+      platforms,
+      period,
+    );
+  }, [filteredBookings, filters.month, platforms, properties]);
   const activeFilterLabels = describeActiveFilters(filters, {
     properties: propertyMap,
     platforms: platformMap,
@@ -131,6 +150,20 @@ export function IncomeView({
           <span className="font-semibold text-rc-gold-light">
             {formatCurrency(filteredTotal)}
           </span>
+          {" · "}
+          Netto in banca{" "}
+          <span className="font-semibold text-emerald-400">
+            {formatCurrency(channelSummary.bankNet)}
+          </span>
+          {channelSummary.cashTotal > 0 ? (
+            <>
+              {" · "}
+              Contanti{" "}
+              <span className="font-semibold text-rc-gold-light">
+                {formatCurrency(channelSummary.cashTotal)}
+              </span>
+            </>
+          ) : null}
           {activeFilterLabels.length > 0 ? (
             <span> · {activeFilterLabels.join(" · ")}</span>
           ) : null}
@@ -147,6 +180,15 @@ export function IncomeView({
           onPurge={onClearTransactions}
         />
       </Card>
+
+      <IncomeChannelSummaryCard
+        summary={channelSummary}
+        subtitle={
+          activeFilterLabels.length > 0
+            ? `Filtrata: ${activeFilterLabels.join(" · ")}`
+            : undefined
+        }
+      />
 
       <Card
         title={`Incassi per appartamento · FY${FISCAL_YEAR}`}
@@ -172,6 +214,15 @@ export function IncomeView({
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rc-gold/30 pb-2">
                     <h3 className="font-[family-name:var(--font-cormorant)] text-xl font-semibold text-rc-gold-light">
                       {propertyGroup.name}
+                      <span className="ml-2 text-sm font-normal text-rc-muted">
+                        ·{" "}
+                        {getBankAccountLabel(
+                          getPropertyBankAccount(
+                            propertyGroup.propertyId,
+                            properties,
+                          ),
+                        )}
+                      </span>
                     </h3>
                     <p className="text-sm text-rc-muted">
                       {uniqueBookings(
@@ -332,11 +383,11 @@ export function IncomeView({
       </Card>
 
       <Card
-        title="Matrice incassi per piattaforma"
+        title="Matrice incassi per piattaforma (lordo)"
         subtitle={
           activeFilterLabels.length > 0
-            ? `Filtrata: ${activeFilterLabels.join(" · ")}`
-            : `Tutti gli incassi FY${FISCAL_YEAR}`
+            ? `Filtrata: ${activeFilterLabels.join(" · ")} · vedi sopra il netto in banca per conto`
+            : `Lordo FY${FISCAL_YEAR} · vedi sopra il netto in banca per conto`
         }
       >
         <DataTable

@@ -1,4 +1,4 @@
-import type { ExpenseCategory, Platform, Property } from "./types";
+import type { ExpenseCategory, Platform, Property, BankAccountId } from "./types";
 
 export const FISCAL_YEAR = 2026;
 export const FISCAL_YEAR_START = `${FISCAL_YEAR}-01-01`;
@@ -13,6 +13,14 @@ export const DEFAULT_CLEANING_COSTS: Record<string, number> = {
 
 export const DEFAULT_KROSSBOOKING_MONTHLY = 30;
 export const DEFAULT_AIRBNB_COMMISSION_RATE = 0.155;
+
+export const DEFAULT_BANK_ACCOUNT: BankAccountId = "hsp";
+
+export const BANK_ACCOUNT_OPTIONS: { id: BankAccountId; label: string }[] = [
+  { id: "hsp", label: "HSP" },
+  { id: "dsep", label: "DSEP" },
+  { id: "dd", label: "D&D" },
+];
 
 export const DEFAULT_PROPERTIES: Property[] = [
   {
@@ -105,9 +113,9 @@ export const DEFAULT_EXPENSE_CATEGORIES: ExpenseCategory[] = [
   { id: "lavanderia", name: "Lavanderia" },
 ];
 
-export const MAX_PROPERTIES = 20;
+export const MAX_PROPERTIES = 40;
 export const MAX_PLATFORMS = 20;
-export const MAX_EXPENSE_CATEGORIES = 20;
+export const MAX_EXPENSE_CATEGORIES = 40;
 
 export const MONTH_LABELS = [
   "Gennaio",

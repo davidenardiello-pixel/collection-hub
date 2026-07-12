@@ -16,6 +16,7 @@ import { syncMissingBookingVat } from "./booking-vat";
 import { resyncAirbnbOtaBookings } from "./ota-import/airbnb";
 import {
   createEmptyProfitTargets,
+  DEFAULT_BANK_ACCOUNT,
   DEFAULT_CLEANING_COSTS,
   DEFAULT_EXPENSE_CATEGORIES,
   DEFAULT_AIRBNB_COMMISSION_RATE,
@@ -23,6 +24,7 @@ import {
   DEFAULT_PLATFORMS,
   DEFAULT_PROPERTIES,
 } from "./constants";
+import { normalizeBankAccount } from "./bank-accounts";
 import type {
   AutomationSettings,
   Booking,
@@ -76,6 +78,7 @@ function normalizeProperty(property: Property): Property {
       property.krossBookingMonthly ?? DEFAULT_KROSSBOOKING_MONTHLY,
     airbnbCommissionRate:
       property.airbnbCommissionRate ?? DEFAULT_AIRBNB_COMMISSION_RATE,
+    bankAccount: normalizeBankAccount(property.bankAccount),
   };
 }
 
@@ -101,6 +104,7 @@ function ensureProperties(
           monthlyRent: 0,
           cleaningCostPerCheckIn: DEFAULT_CLEANING_COSTS[propertyId] ?? 0,
           krossBookingMonthly: DEFAULT_KROSSBOOKING_MONTHLY,
+          bankAccount: DEFAULT_BANK_ACCOUNT,
         }),
       );
       knownIds.add(propertyId);

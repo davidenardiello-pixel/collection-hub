@@ -14,9 +14,13 @@ import {
 } from "@/lib/booking-vat";
 import { parseBackup } from "@/lib/backup";
 import {
+  DEFAULT_BANK_ACCOUNT,
   DEFAULT_KROSSBOOKING_MONTHLY,
+  MAX_EXPENSE_CATEGORIES,
   MAX_PLATFORMS,
+  MAX_PROPERTIES,
 } from "@/lib/constants";
+import type { BankAccountId } from "@/lib/types";
 import { createUniqueId, normalizeDashboardData } from "@/lib/migrate";
 import { removePropertyFromDashboard } from "@/lib/property-removal";
 import {
@@ -475,7 +479,11 @@ export function useCloudDashboardStorage(enabled: boolean) {
   );
 
   const addProperty = useCallback(
-    (name: string, monthlyRent: number): string | null => {
+    (
+      name: string,
+      monthlyRent: number,
+      bankAccount: BankAccountId = DEFAULT_BANK_ACCOUNT,
+    ): string | null => {
       const trimmed = name.trim();
       if (!trimmed) {
         return "Inserisci il nome dell'appartamento.";
@@ -484,8 +492,8 @@ export function useCloudDashboardStorage(enabled: boolean) {
       let error: string | null = null;
 
       persist((current) => {
-        if (current.properties.length >= 20) {
-          error = "Puoi gestire al massimo 20 appartamenti.";
+        if (current.properties.length >= MAX_PROPERTIES) {
+          error = `Puoi gestire al massimo ${MAX_PROPERTIES} appartamenti.`;
           return current;
         }
 
@@ -504,6 +512,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
               monthlyRent,
               cleaningCostPerCheckIn: 0,
               krossBookingMonthly: DEFAULT_KROSSBOOKING_MONTHLY,
+              bankAccount,
             },
           ],
         };
@@ -520,6 +529,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
       name: string,
       monthlyRent: number,
       airbnbCommissionRate?: number,
+      bankAccount?: BankAccountId,
     ): string | null => {
       const trimmed = name.trim();
       if (!trimmed) {
@@ -543,6 +553,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
                 name: trimmed,
                 monthlyRent,
                 ...(rate != null ? { airbnbCommissionRate: rate } : {}),
+                ...(bankAccount != null ? { bankAccount } : {}),
               }
             : property,
         ),
@@ -578,8 +589,8 @@ export function useCloudDashboardStorage(enabled: boolean) {
       let error: string | null = null;
 
       persist((current) => {
-        if (current.expenseCategories.length >= 20) {
-          error = "Puoi gestire al massimo 20 categorie di spesa.";
+        if (current.expenseCategories.length >= MAX_EXPENSE_CATEGORIES) {
+          error = `Puoi gestire al massimo ${MAX_EXPENSE_CATEGORIES} categorie di spesa.`;
           return current;
         }
 
