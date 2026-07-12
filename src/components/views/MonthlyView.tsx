@@ -18,6 +18,7 @@ import {
   getScopedCategoryBreakdown,
   getScopedPlatformBreakdown,
 } from "@/lib/calculations";
+import { getBankAccountLabel, getPropertyBankAccount } from "@/lib/bank-accounts";
 import { CHART_COLORS } from "@/lib/brand";
 import {
   FISCAL_YEAR,
@@ -514,6 +515,7 @@ export function MonthlyView({
               showOccupancyMetrics
                 ? [
                     "Appartamento",
+                    "Conto",
                     "Incassi",
                     "Spese",
                     "Profitto",
@@ -526,6 +528,7 @@ export function MonthlyView({
                   ]
                 : [
                     "Appartamento",
+                    "Conto",
                     "Incassi",
                     "Spese",
                     "Profitto",
@@ -552,6 +555,11 @@ export function MonthlyView({
                     >
                       {property.name}
                     </button>
+                  </td>
+                  <td className="px-2 py-2 text-sm text-rc-muted">
+                    {getBankAccountLabel(
+                      getPropertyBankAccount(property.id, properties),
+                    )}
                   </td>
                   <td className="px-2 py-2">
                     <Money value={property.income} />
@@ -601,6 +609,7 @@ export function MonthlyView({
               <td className="px-2 py-2 font-semibold text-rc-gold-light">
                 Totale mese
               </td>
+              <td className="px-2 py-2" />
               <td className="px-2 py-2 font-semibold">
                 <Money value={monthTotals.income} />
               </td>
