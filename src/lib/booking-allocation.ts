@@ -123,35 +123,11 @@ function getLegacyCheckInAllocation(booking: Booking): BookingAllocation[] {
   return [{ period: getPeriodFromDate(booking.checkIn), share: 1 }];
 }
 
-function getOtaImportScopeAllocation(booking: Booking): BookingAllocation[] | null {
-  if (!booking.otaImportScope) {
-    return null;
-  }
-
-  const match = booking.otaImportScope.match(/:(\d{4})-(\d{2})$/);
-  if (!match) {
-    return null;
-  }
-
-  return [
-    {
-      period: { year: Number(match[1]), month: Number(match[2]) },
-      share: 1,
-    },
-  ];
-}
-
 export function getBookingAllocations(booking: Booking): BookingAllocation[] {
-  const otaScopeAllocation = getOtaImportScopeAllocation(booking);
-  if (otaScopeAllocation) {
-    return otaScopeAllocation;
-  }
-
   if (booking.importedFromExcel || booking.legacyIncomeAttribution) {
     return getLegacyCheckInAllocation(booking);
   }
 
-  // Nuova regola: tutti i guadagni vanno al mese del check-in
   const checkInPeriod = getPeriodFromDate(booking.checkIn);
   return [{ period: checkInPeriod, share: 1 }];
 }

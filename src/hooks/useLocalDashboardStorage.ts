@@ -681,6 +681,7 @@ export function useLocalDashboardStorage() {
         locked: 0,
         removedGuests: [],
         reservations: body.reservations,
+        crossMonthAttributions: [],
       };
 
       persist((current) => {
@@ -760,6 +761,7 @@ export function useLocalDashboardStorage() {
         locked: 0,
         removedGuests: [],
         reservations: body.reservations,
+        crossMonthAttributions: [],
       };
 
       persist((current) => {

@@ -11,6 +11,7 @@ import {
   sumReservationMoney,
 } from "@/lib/ota-import/snapshots";
 import type { OtaImportSnapshot, Property } from "@/lib/types";
+import { CrossMonthAttributionNotice } from "./CrossMonthAttributionNotice";
 import { Button, Card, Field, Select } from "./ui";
 
 export function BookingImportPanel({
@@ -67,8 +68,12 @@ export function BookingImportPanel({
         result.removedGuests.length > 0
           ? ` · rimosse: ${result.removedGuests.join(", ")}`
           : "";
+      const crossMonthHint =
+        result.crossMonthAttributions.length > 0
+          ? ` · ${result.crossMonthAttributions.length} con incasso in altro mese (check-in)`
+          : "";
       onMessage?.(
-        `Booking.com sincronizzato: +${result.added} · aggiornate ${result.updated} · eliminate ${result.removed}${removedHint} · bloccate ${result.locked}.`,
+        `Booking.com sincronizzato: +${result.added} · aggiornate ${result.updated} · eliminate ${result.removed}${removedHint} · bloccate ${result.locked}${crossMonthHint}.`,
       );
     } catch (importError) {
       const message =
@@ -102,7 +107,8 @@ export function BookingImportPanel({
         leggiamo prenotazione e prezzo; le commissioni seguono il PDF Booking
         (commissione OTA + 1,5% costo pagamento, es. 18% + 1,5% = 19,5%). L&apos;XLS
         da solo sottostima (solo 18%). L&apos;IVA 10% scorporo sul lordo è calcolata
-        a parte, come nell&apos;inserimento manuale.
+        a parte, come nell&apos;inserimento manuale. Gli incassi vanno sempre al{" "}
+        <strong>mese di check-in</strong>, anche se il file è di un altro mese.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -229,6 +235,10 @@ export function BookingImportPanel({
               Rimosse dal file: {preview.removedGuests.join(", ")}
             </p>
           ) : null}
+          <CrossMonthAttributionNotice
+            importPeriod={preview.period}
+            attributions={preview.crossMonthAttributions}
+          />
           <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto text-rc-muted">
             {preview.reservations.map((reservation) => (
               <li key={reservation.externalId}>

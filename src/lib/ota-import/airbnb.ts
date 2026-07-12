@@ -1,6 +1,10 @@
 import { refreshAutomatedCleaningExpenses } from "../automation";
 import { getPeriodFromDate } from "../calculations";
 import {
+  findCrossMonthAttributions,
+  type CrossMonthAttribution,
+} from "./cross-month-attribution";
+import {
   removeAllBookingLinkedExpenses,
   upsertAllBookingLinkedExpenses,
 } from "../booking-vat";
@@ -37,6 +41,7 @@ export interface AirbnbSyncPreview {
   locked: number;
   removedGuests: string[];
   reservations: AirbnbReservation[];
+  crossMonthAttributions: CrossMonthAttribution[];
 }
 
 export function buildAirbnbImportScope(
@@ -306,6 +311,7 @@ export function syncAirbnbReservations(
         (booking) => booking.description || booking.externalId || "Prenotazione",
       ),
       reservations,
+      crossMonthAttributions: findCrossMonthAttributions(reservations, period),
     },
   };
 }
