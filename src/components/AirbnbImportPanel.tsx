@@ -14,6 +14,7 @@ import {
   sumReservationMoney,
 } from "@/lib/ota-import/snapshots";
 import type { OtaImportSnapshot, Property } from "@/lib/types";
+import { CrossMonthAttributionNotice } from "./CrossMonthAttributionNotice";
 import { Button, Card, Field, Select } from "./ui";
 
 function getDefaultImportMonth(): number {
@@ -100,8 +101,12 @@ export function AirbnbImportPanel({
         result.removedGuests.length > 0
           ? ` · rimosse: ${result.removedGuests.join(", ")}`
           : "";
+      const crossMonthHint =
+        result.crossMonthAttributions.length > 0
+          ? ` · ${result.crossMonthAttributions.length} con incasso in altro mese (check-in)`
+          : "";
       onMessage?.(
-        `Airbnb sincronizzato: +${result.added} · aggiornate ${result.updated} · eliminate ${result.removed}${removedHint} · bloccate ${result.locked}.`,
+        `Airbnb sincronizzato: +${result.added} · aggiornate ${result.updated} · eliminate ${result.removed}${removedHint} · bloccate ${result.locked}${crossMonthHint}.`,
       );
     } catch (importError) {
       const message =
@@ -141,7 +146,8 @@ export function AirbnbImportPanel({
         {(airbnbCommissionRate * 100).toFixed(1).replace(".0", "")}%). Il{" "}
         <strong>lordo totale cliente</strong> (pulizie incluse) si ricostruisce
         come Guadagni ÷ {(1 - airbnbCommissionRate).toFixed(3)}; sull&apos;incasso
-        si scorpora poi l&apos;IVA soggiorno 10%.
+        si scorpora poi l&apos;IVA soggiorno 10%. Gli incassi vanno sempre al{" "}
+        <strong>mese di check-in</strong>, anche se importi un file di un altro mese.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -158,7 +164,7 @@ export function AirbnbImportPanel({
           </Select>
         </Field>
 
-        <Field label="Mese competenza">
+        <Field label="Mese file import">
           <Select value={month} onChange={(event) => setMonth(event.target.value)}>
             {MONTH_LABELS.map((label, index) => (
               <option key={label} value={String(index + 1)}>
@@ -255,6 +261,10 @@ export function AirbnbImportPanel({
               ),
             )}
           </p>
+          <CrossMonthAttributionNotice
+            importPeriod={preview.period}
+            attributions={preview.crossMonthAttributions}
+          />
           <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto text-rc-muted">
             {previewRows.map(({ reservation, amounts }) => (
               <li key={reservation.externalId}>

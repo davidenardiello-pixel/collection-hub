@@ -855,6 +855,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
         locked: 0,
         removedGuests: [],
         reservations: body.reservations,
+        crossMonthAttributions: [],
       };
 
       persist((current) => {
@@ -938,6 +939,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
         locked: 0,
         removedGuests: [],
         reservations: body.reservations,
+        crossMonthAttributions: [],
       };
 
       persist((current) => {
