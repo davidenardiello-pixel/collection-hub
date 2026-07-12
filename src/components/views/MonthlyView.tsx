@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import {
   formatCurrency,
   formatPercent,
+  getAggregatedPropertiesMonthlyMatrix,
+  getAllPropertiesMonthlyCategoryMatrix,
+  getAllPropertiesMonthlyPlatformMatrix,
   getMonthlyDetail,
   getMonthlySummaries,
   getPropertiesMonthBreakdown,
@@ -118,14 +121,17 @@ export function MonthlyView({
     [bookings, expenses, properties],
   );
 
-  const annualPropertyId =
-    selectedPropertyId === "all"
-      ? (propertiesMatrix[0]?.id ?? "")
-      : selectedPropertyId;
+  const aggregatedProperty = useMemo(
+    () => getAggregatedPropertiesMonthlyMatrix(propertiesMatrix),
+    [propertiesMatrix],
+  );
 
-  const activeProperty =
-    propertiesMatrix.find((property) => property.id === annualPropertyId) ??
-    propertiesMatrix[0];
+  const displayProperty =
+    selectedPropertyId === "all"
+      ? aggregatedProperty
+      : (propertiesMatrix.find((property) => property.id === selectedPropertyId) ??
+        propertiesMatrix[0] ??
+        null);
 
   const monthTotals = propertiesMonthBreakdown.reduce(
     (totals, property) => ({
@@ -228,29 +234,29 @@ export function MonthlyView({
     [expenses, properties, expenseCategories, monthPeriod],
   );
 
-  const activePropertyPlatforms = useMemo(
-    () =>
-      activeProperty
-        ? getPropertyMonthlyPlatformMatrix(
-            activeProperty.id,
-            bookings,
-            platforms,
-          )
-        : null,
-    [activeProperty, bookings, platforms],
-  );
+  const activePropertyPlatforms = useMemo(() => {
+    if (selectedPropertyId === "all") {
+      return getAllPropertiesMonthlyPlatformMatrix(bookings, platforms);
+    }
 
-  const activePropertyCategories = useMemo(
-    () =>
-      activeProperty
-        ? getPropertyMonthlyCategoryMatrix(
-            activeProperty.id,
-            expenses,
-            expenseCategories,
-          )
-        : null,
-    [activeProperty, expenseCategories, expenses],
-  );
+    return displayProperty
+      ? getPropertyMonthlyPlatformMatrix(displayProperty.id, bookings, platforms)
+      : null;
+  }, [bookings, displayProperty, platforms, selectedPropertyId]);
+
+  const activePropertyCategories = useMemo(() => {
+    if (selectedPropertyId === "all") {
+      return getAllPropertiesMonthlyCategoryMatrix(expenses, expenseCategories);
+    }
+
+    return displayProperty
+      ? getPropertyMonthlyCategoryMatrix(
+          displayProperty.id,
+          expenses,
+          expenseCategories,
+        )
+      : null;
+  }, [displayProperty, expenseCategories, expenses, selectedPropertyId]);
 
   return (
     <div className="space-y-6">
@@ -618,6 +624,8 @@ export function MonthlyView({
                   <td className="px-2 py-2" />
                   <td className="px-2 py-2" />
                   <td className="px-2 py-2" />
+                  <td className="px-2 py-2" />
+                  <td className="px-2 py-2" />
                 </>
               ) : null}
             </DataRow>
@@ -659,8 +667,9 @@ export function MonthlyView({
 
       <Card title="Dettaglio annuo per appartamento">
         <p className="mb-4 text-sm text-rc-muted">
-          Per ogni appartamento, incassi, spese e profitto mese per mese nell&apos;anno
-          fiscale.
+          Incassi, spese e profitto mese per mese nell&apos;anno fiscale. Con{" "}
+          <strong>Tutti</strong> vedi i totali aggregati di tutti gli appartamenti;
+          seleziona un singolo appartamento per il dettaglio.
         </p>
         {properties.length === 0 ? (
           <p className="text-sm text-rc-muted">
@@ -686,16 +695,19 @@ export function MonthlyView({
               ))}
             </div>
 
-            {activeProperty ? (
+            {displayProperty ? (
               <div className="grid gap-6 xl:grid-cols-2">
                 <div>
+                  <p className="mb-3 text-sm font-medium text-rc-gold-light">
+                    {displayProperty.name}
+                  </p>
                   <div className="mb-4 grid gap-3 sm:grid-cols-3">
                     <div className="rounded-lg border border-rc-gold/20 bg-rc-charcoal/40 p-3">
                       <p className="text-xs uppercase tracking-wide text-rc-muted">
                         Incassi anno
                       </p>
                       <p className="mt-1 text-lg font-semibold text-rc-gold-light">
-                        {formatCurrency(activeProperty.income)}
+                        {formatCurrency(displayProperty.income)}
                       </p>
                     </div>
                     <div className="rounded-lg border border-rc-gold/20 bg-rc-charcoal/40 p-3">
@@ -703,7 +715,7 @@ export function MonthlyView({
                         Spese anno
                       </p>
                       <p className="mt-1 text-lg font-semibold text-amber-400">
-                        {formatCurrency(activeProperty.expenses)}
+                        {formatCurrency(displayProperty.expenses)}
                       </p>
                     </div>
                     <div className="rounded-lg border border-rc-gold/20 bg-rc-charcoal/40 p-3">
@@ -712,12 +724,12 @@ export function MonthlyView({
                       </p>
                       <p
                         className={`mt-1 text-lg font-semibold ${
-                          activeProperty.profit >= 0
+                          displayProperty.profit >= 0
                             ? "text-emerald-400"
                             : "text-rose-400"
                         }`}
                       >
-                        {formatCurrency(activeProperty.profit)}
+                        {formatCurrency(displayProperty.profit)}
                       </p>
                     </div>
                   </div>
@@ -731,7 +743,7 @@ export function MonthlyView({
                       "Margine",
                     ]}
                   >
-                    {activeProperty.months.map((month) => (
+                    {displayProperty.months.map((month) => (
                       <DataRow key={month.label}>
                         <td className="px-2 py-2">
                           <button
@@ -765,28 +777,30 @@ export function MonthlyView({
                         Totale
                       </td>
                       <td className="px-2 py-2 font-semibold">
-                        <Money value={activeProperty.income} />
+                        <Money value={displayProperty.income} />
                       </td>
                       <td className="px-2 py-2 font-semibold">
-                        <Money value={activeProperty.expenses} />
+                        <Money value={displayProperty.expenses} />
                       </td>
                       <td className="px-2 py-2 font-semibold">
-                        <Money value={activeProperty.profit} />
+                        <Money value={displayProperty.profit} />
                       </td>
                       <td className="px-2 py-2 font-semibold">
-                        <Percent value={activeProperty.margin} />
+                        <Percent value={displayProperty.margin} />
                       </td>
                     </DataRow>
                   </DataTable>
                 </div>
 
-                <MonthlyTrendChart months={activeProperty.months} />
+                <MonthlyTrendChart months={displayProperty.months} />
               </div>
             ) : null}
 
-            {activeProperty && activePropertyPlatforms && activePropertyCategories ? (
+            {displayProperty && activePropertyPlatforms && activePropertyCategories ? (
               <div className="mt-6 grid gap-6">
-                <Card title={`${activeProperty.name} — incassi per OTA mese per mese`}>
+                <Card
+                  title={`${displayProperty.name} — incassi per OTA mese per mese`}
+                >
                   <MonthlyVoiceMatrix
                     rowLabel="Mese"
                     columns={platforms}
@@ -809,7 +823,7 @@ export function MonthlyView({
                   />
                 </Card>
 
-                <Card title={`${activeProperty.name} — spese per voce mese per mese`}>
+                <Card title={`${displayProperty.name} — spese per voce mese per mese`}>
                   <MonthlyVoiceMatrix
                     rowLabel="Mese"
                     columns={expenseCategories}
@@ -898,6 +912,26 @@ export function MonthlyView({
                     />
                   </tr>
                 ))}
+                {aggregatedProperty ? (
+                  <tr className="border-t border-rc-gold/30 bg-rc-charcoal/50 font-semibold">
+                    <td className="sticky left-0 z-10 bg-rc-charcoal px-2 py-2 text-rc-gold-light">
+                      Totale tutti
+                    </td>
+                    {aggregatedProperty.months.map((month) => (
+                      <MonthMatrixCells
+                        key={`total-${month.label}`}
+                        month={month}
+                      />
+                    ))}
+                    <MonthMatrixCells
+                      month={{
+                        income: aggregatedProperty.income,
+                        expenses: aggregatedProperty.expenses,
+                        profit: aggregatedProperty.profit,
+                      }}
+                    />
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>

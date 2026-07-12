@@ -474,6 +474,123 @@ export function getPropertiesMonthlyMatrix(
   });
 }
 
+export function getAggregatedPropertiesMonthlyMatrix(
+  propertiesMatrix: ReturnType<typeof getPropertiesMonthlyMatrix>,
+) {
+  if (propertiesMatrix.length === 0) {
+    return null;
+  }
+
+  const months = propertiesMatrix[0].months.map((month, monthIndex) => {
+    const income = propertiesMatrix.reduce(
+      (total, property) => total + property.months[monthIndex].income,
+      0,
+    );
+    const expenses = propertiesMatrix.reduce(
+      (total, property) => total + property.months[monthIndex].expenses,
+      0,
+    );
+    const profit = income - expenses;
+
+    return {
+      period: month.period,
+      label: month.label,
+      income,
+      expenses,
+      profit,
+      margin: income > 0 ? profit / income : 0,
+    };
+  });
+
+  const income = months.reduce((total, month) => total + month.income, 0);
+  const expenses = months.reduce((total, month) => total + month.expenses, 0);
+  const profit = income - expenses;
+
+  return {
+    id: "all",
+    name: "Tutti gli appartamenti",
+    months,
+    income,
+    expenses,
+    profit,
+    margin: income > 0 ? profit / income : 0,
+  };
+}
+
+export function getAllPropertiesMonthlyPlatformMatrix(
+  bookings: Booking[],
+  platforms: Platform[],
+) {
+  return {
+    months: getFiscalMonths().map((period) => {
+      const income = sumBookingsInPeriod(bookings, period);
+
+      return {
+        period,
+        label: getMonthLabel(period.month),
+        income,
+        platforms: platforms.map((platform) => ({
+          id: platform.id,
+          name: platform.name,
+          total: sumBookingsInPeriod(
+            bookings,
+            period,
+            (booking) => booking.platformId === platform.id,
+          ),
+        })),
+      };
+    }),
+    platforms: platforms.map((platform) => ({
+      id: platform.id,
+      name: platform.name,
+      total: getFiscalMonths().reduce(
+        (total, period) =>
+          total +
+          sumBookingsInPeriod(
+            bookings,
+            period,
+            (booking) => booking.platformId === platform.id,
+          ),
+        0,
+      ),
+    })),
+  };
+}
+
+export function getAllPropertiesMonthlyCategoryMatrix(
+  expenses: Expense[],
+  categories: ExpenseCategory[],
+) {
+  return {
+    months: getFiscalMonths().map((period) => {
+      const monthExpenses = filterExpensesByPeriod(expenses, period);
+      const expenseTotal = sumExpenses(monthExpenses);
+
+      return {
+        period,
+        label: getMonthLabel(period.month),
+        expenses: expenseTotal,
+        categories: categories.map((category) => ({
+          id: category.id,
+          name: category.name,
+          total: sumExpenses(
+            monthExpenses,
+            (expense) => expense.categoryId === category.id,
+          ),
+        })),
+      };
+    }),
+    categories: categories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      total: sumExpenses(
+        expenses,
+        (expense) => expense.categoryId === category.id,
+      ),
+    })),
+  };
+}
+
 export function getMonthlyDetail(
   period: MonthPeriod,
   bookings: Booking[],
