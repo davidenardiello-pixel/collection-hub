@@ -45,19 +45,36 @@ napoli-collection/
 ## 🚀 Quick Start
 
 1. Prepara i dati delle tue case in `data/case-vacanze.json`
-2. Aggiungi foto nella cartella `images/`
+2. Aggiungi foto nella cartella `images/` e collega i nomi file nel JSON (`images`, `hero_image`)
 3. Esegui il generatore:
    ```bash
-   cd generator
+   cd napoli-collection/generator
+   pip install -r requirements.txt
    python pdf_generator.py
    ```
 4. I PDF verranno creati in `output/`
+
+### Opzioni utili
+
+```bash
+# Solo una proprietà
+python pdf_generator.py --property-id 1
+
+# Include anche proprietà inactive (esempi senza foto)
+python pdf_generator.py --include-inactive
+```
 
 ## 📄 Formato Brochure
 
 - **Dimensioni**: A4 verticale
 - **Pagine**: 2 pagine (fronte-retro)
-- **Contiene**: Foto, descrizione, servizi, prezzi, mappa, contatti
+- **Contiene**: Brand header, hero photo, descrizione, highlight, gallery, servizi, dintorni, contatti
+
+## Proprietà attive
+
+| ID | Nome | Foto |
+|----|------|------|
+| 1 | Elegante Appartamento Vico Pontecorvo | 16 immagini in `images/daniele-vico-pontecorvo-*.jpeg` |
 
 ## 👤 Autore
 Creato da @davidenardiello-pixel

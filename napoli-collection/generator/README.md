@@ -20,12 +20,17 @@ pip install -r requirements.txt
 ## 💻 Utilizzo
 
 ```bash
-# Generazione base
+# Dalla cartella generator/
 python pdf_generator.py
 
-# Con opzioni
-python pdf_generator.py --data-file data/custom.json --output-dir /output
+# Solo una proprietà
+python pdf_generator.py --property-id 1
+
+# Percorsi personalizzati
+python pdf_generator.py --data-file ../data/case-vacanze.json --output-dir ../output
 ```
+
+I path di default puntano a `napoli-collection/data`, `images` e `output`.
 
 ## 📚 Documentazione Completa
 

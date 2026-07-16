@@ -1,8 +1,17 @@
 {
+  "brand": {
+    "name": "La Bellezza di Napoli",
+    "collection": "Collection",
+    "tagline": "Vivi Napoli, ama Napoli",
+    "email": "dedpropertynapoli@gmail.com",
+    "phone": "+39 366 9129864"
+  },
   "properties": [
     {
       "id": 1,
-      "name": "Elegante Appartamento Vico Pontecorvo - Vista Vesuvio",
+      "active": true,
+      "name": "Elegante Appartamento Vico Pontecorvo",
+      "subtitle": "Vista Vesuvio · Centro Storico",
       "location": "Napoli - Centro Storico",
       "description": "Scopri il fascino autentico di Napoli soggiornando nel nostro elegante appartamento in Vico Pontecorvo 28, con una splendida vista panoramica sul Vesuvio. Situato accanto al Museo Hermann Nitsch, a soli 5 minuti a piedi da Piazza Dante, dal Centro Storico e da Via dei Tribunali, è immerso in uno dei quartieri più artistici e vivaci della città.",
       "long_description": "Questo esclusivo appartamento combina il fascino della Napoli storica con tutti i comfort moderni. La posizione è perfetta per vivere Napoli a piedi, circondato da locali, ristoranti, pizzerie e botteghe tipiche. Dall'appartamento potrai godere di una splendida vista panoramica sul Vesuvio, simbolo indimenticabile della città.",
@@ -13,20 +22,23 @@
         "Cucina completa",
         "Lavatrice",
         "TV",
-        "Balcone privato con vista Vesuvio",
+        "Balcone privato con vista",
         "Spazio di lavoro dedicato",
         "Animali domestici ammessi",
         "Self check-in Smart Lock",
         "Asciugacapelli",
-        "Prodotti per la pulizia",
         "Ferro da stiro",
         "Biancheria in cotone",
         "Tende oscuranti",
-        "Kit di primo soccorso",
-        "Frigorifero e congelatore",
-        "Forno",
-        "Macchina per il caffè",
-        "Tavolo da pranzo"
+        "Macchina per il caffè"
+      ],
+      "highlight_services": [
+        "Balcone con vista",
+        "Self check-in",
+        "WiFi Fiber",
+        "Aria condizionata",
+        "Cucina completa",
+        "Animali ammessi"
       ],
       "rooms": 2,
       "bathrooms": 1,
@@ -43,7 +55,15 @@
         "latitude": 40.8577,
         "longitude": 14.2582
       },
-      "images": [],
+      "images": [
+        "daniele-vico-pontecorvo-5.jpeg",
+        "daniele-vico-pontecorvo-2.jpeg",
+        "daniele-vico-pontecorvo-3.jpeg",
+        "daniele-vico-pontecorvo-10.jpeg",
+        "daniele-vico-pontecorvo-11.jpeg",
+        "daniele-vico-pontecorvo-16.jpeg"
+      ],
+      "hero_image": "daniele-vico-pontecorvo-5.jpeg",
       "check_in": "15:00",
       "check_out": "11:00",
       "minimum_stay": 1,
@@ -61,7 +81,9 @@
     },
     {
       "id": 2,
+      "active": false,
       "name": "Villa Vesuvio",
+      "subtitle": "Pompei · Golfo di Napoli",
       "location": "Pompei",
       "description": "Splendida villa con vista panoramica sul Golfo di Napoli. Perfetta per famiglie e gruppi, offre comfort e lusso in uno dei luoghi più affascinanti della Campania.",
       "long_description": "Situata a pochi passi dagli scavi archeologici di Pompei, questa elegante villa combina storia e modernità. Le sue ampie terrazze affacciate sul mare permettono di godere di tramonti indimenticabili.",
@@ -74,6 +96,12 @@
         "Aria condizionata",
         "TV Smart",
         "Lavastoviglie"
+      ],
+      "highlight_services": [
+        "Piscina privata",
+        "Parcheggio",
+        "WiFi Fiber",
+        "Aria condizionata"
       ],
       "rooms": 4,
       "bathrooms": 3,
@@ -95,15 +123,19 @@
         "villa-vesuvio-2.jpg",
         "villa-vesuvio-3.jpg"
       ],
+      "hero_image": "villa-vesuvio-1.jpg",
       "check_in": "15:00",
       "check_out": "11:00",
       "minimum_stay": 3,
       "rating": 4.9,
-      "reviews": 47
+      "reviews": 47,
+      "nearby_attractions": []
     },
     {
       "id": 3,
+      "active": false,
       "name": "Casa del Mare",
+      "subtitle": "Sorrento · Costiera",
       "location": "Sorrento",
       "description": "Incantevole casa a picco sul mare con accesso privato alla spiaggia. Ideale per chi cerca relax e bellezza naturale.",
       "long_description": "Questa affascinante casa è incastonata tra la roccia e il mare, offrendo una vista spettacolare sulla Costiera Amalfitana. Perfetta per coppie e piccole famiglie.",
@@ -116,6 +148,12 @@
         "Jacuzzi",
         "Frigobar",
         "Riscaldamento"
+      ],
+      "highlight_services": [
+        "Terrazza mare",
+        "Accesso spiaggia",
+        "Jacuzzi",
+        "WiFi"
       ],
       "rooms": 2,
       "bathrooms": 2,
@@ -137,11 +175,13 @@
         "casa-mare-2.jpg",
         "casa-mare-3.jpg"
       ],
+      "hero_image": "casa-mare-1.jpg",
       "check_in": "16:00",
       "check_out": "10:00",
       "minimum_stay": 2,
       "rating": 4.8,
-      "reviews": 63
+      "reviews": 63,
+      "nearby_attractions": []
     }
   ]
 }
