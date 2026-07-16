@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-La Bellezza di Napoli — PDF Brochure Generator
-Genera brochure A4 fronte-retro professionali per le case vacanze.
+La Bellezza di Napoli — Premium PDF Brochure Generator
+Layout editoriale A4 fronte-retro ad alto impatto grafico.
 """
 
 from __future__ import annotations
@@ -11,13 +11,13 @@ import argparse
 import json
 import re
 import sys
-from datetime import datetime
 from pathlib import Path
 
 from PIL import Image as PILImage
+from PIL import ImageDraw, ImageEnhance, ImageFilter
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm, mm
+from reportlab.lib.units import cm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
@@ -27,59 +27,63 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DATA = ROOT / "data" / "case-vacanze.json"
 DEFAULT_IMAGES = ROOT / "images"
 DEFAULT_OUTPUT = ROOT / "output"
-DEFAULT_LOGO = ROOT / "logo" / "logo-mark.png"
+FONTS_DIR = ROOT / "fonts"
 
 # ==================== COLORS ====================
-COLORS = {
-    "rosso": colors.HexColor("#C1272D"),
-    "blu": colors.HexColor("#003DA5"),
-    "oro": colors.HexColor("#D4AF37"),
-    "nero": colors.HexColor("#1A1A1A"),
-    "antracite": colors.HexColor("#2C2C2C"),
-    "terracotta": colors.HexColor("#8B6914"),
-    "crema": colors.HexColor("#F7F3E8"),
+C = {
+    "rosso": colors.HexColor("#B01E24"),
+    "blu": colors.HexColor("#0A2F6B"),
+    "oro": colors.HexColor("#C9A227"),
+    "oro_chiaro": colors.HexColor("#E2C56A"),
+    "nero": colors.HexColor("#0E0E0E"),
+    "ink": colors.HexColor("#171717"),
+    "crema": colors.HexColor("#F3EEE3"),
     "bianco": colors.HexColor("#FFFFFF"),
-    "grigio": colors.HexColor("#5A5A5A"),
-    "linea": colors.HexColor("#D4AF37"),
+    "grigio": colors.HexColor("#6E6A63"),
+    "fumo": colors.HexColor("#2A2A2A"),
 }
 
 
 def register_fonts() -> dict[str, str]:
-    """Register available system fonts; fall back to Helvetica family."""
     mapping = {
-        "title": "Helvetica-Bold",
-        "body": "Helvetica",
-        "body_bold": "Helvetica-Bold",
-        "italic": "Helvetica-Oblique",
+        "display": "Helvetica-Bold",
+        "display_it": "Helvetica-Oblique",
+        "sans": "Helvetica",
+        "sans_md": "Helvetica",
+        "sans_bd": "Helvetica-Bold",
     }
-    candidates = [
-        (
-            "DejaVuSans",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf",
-        ),
-        (
-            "LiberationSans",
-            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-            "/usr/share/fonts/truetype/liberation/LiberationSans-Italic.ttf",
-        ),
+    pairs = [
+        ("PlayfairDisplay", "PlayfairDisplay-Regular.ttf"),
+        ("PlayfairDisplay-Bold", "PlayfairDisplay-Bold.ttf"),
+        ("PlayfairDisplay-Italic", "PlayfairDisplay-Italic.ttf"),
+        ("Montserrat", "Montserrat-Regular.ttf"),
+        ("Montserrat-Medium", "Montserrat-Medium.ttf"),
+        ("Montserrat-SemiBold", "Montserrat-SemiBold.ttf"),
+        ("Montserrat-Bold", "Montserrat-Bold.ttf"),
     ]
-    for family, regular, bold, italic in candidates:
-        if Path(regular).exists() and Path(bold).exists():
+    registered = {}
+    for name, filename in pairs:
+        path = FONTS_DIR / filename
+        if path.exists():
             try:
-                pdfmetrics.registerFont(TTFont(f"{family}", regular))
-                pdfmetrics.registerFont(TTFont(f"{family}-Bold", bold))
-                if Path(italic).exists():
-                    pdfmetrics.registerFont(TTFont(f"{family}-Oblique", italic))
-                    mapping["italic"] = f"{family}-Oblique"
-                mapping["title"] = f"{family}-Bold"
-                mapping["body"] = family
-                mapping["body_bold"] = f"{family}-Bold"
-                break
-            except Exception:
-                continue
+                pdfmetrics.registerFont(TTFont(name, str(path)))
+                registered[name] = True
+            except Exception as exc:
+                print(f"Font skip {name}: {exc}")
+    if registered.get("PlayfairDisplay-Bold"):
+        mapping["display"] = "PlayfairDisplay-Bold"
+    if registered.get("PlayfairDisplay-Italic"):
+        mapping["display_it"] = "PlayfairDisplay-Italic"
+    elif registered.get("PlayfairDisplay"):
+        mapping["display_it"] = "PlayfairDisplay"
+    if registered.get("Montserrat"):
+        mapping["sans"] = "Montserrat"
+    if registered.get("Montserrat-Medium"):
+        mapping["sans_md"] = "Montserrat-Medium"
+    if registered.get("Montserrat-SemiBold"):
+        mapping["sans_bd"] = "Montserrat-SemiBold"
+    elif registered.get("Montserrat-Bold"):
+        mapping["sans_bd"] = "Montserrat-Bold"
     return mapping
 
 
@@ -110,50 +114,28 @@ def wrap_text(c: canvas.Canvas, text: str, font: str, size: float, max_width: fl
     return lines
 
 
-def draw_rounded_rect(c: canvas.Canvas, x, y, w, h, radius=6, fill=None, stroke=None, stroke_width=1):
-    c.saveState()
-    if fill:
-        c.setFillColor(fill)
-    if stroke:
-        c.setStrokeColor(stroke)
-        c.setLineWidth(stroke_width)
-    c.roundRect(x, y, w, h, radius, fill=1 if fill else 0, stroke=1 if stroke else 0)
-    c.restoreState()
+def cover_crop(im: PILImage.Image, tw: int, th: int) -> PILImage.Image:
+    src_w, src_h = im.size
+    target_ratio = tw / th
+    src_ratio = src_w / src_h
+    if src_ratio > target_ratio:
+        new_w = int(src_h * target_ratio)
+        left = (src_w - new_w) // 2
+        im = im.crop((left, 0, left + new_w, src_h))
+    else:
+        new_h = int(src_w / target_ratio)
+        top = max(0, int((src_h - new_h) * 0.35))  # bias slightly upward for interiors
+        if top + new_h > src_h:
+            top = src_h - new_h
+        im = im.crop((0, top, src_w, top + new_h))
+    return im.resize((tw, th), PILImage.Resampling.LANCZOS)
 
 
-def fit_image(path: Path, max_w: float, max_h: float) -> tuple[float, float]:
-    with PILImage.open(path) as im:
-        iw, ih = im.size
-    ratio = min(max_w / iw, max_h / ih)
-    return iw * ratio, ih * ratio
-
-
-def cover_image(path: Path, target_w: float, target_h: float, cache_dir: Path) -> Path:
-    """Crop/resize image to cover a box (object-fit: cover)."""
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    out = cache_dir / f"{path.stem}_{int(target_w)}x{int(target_h)}.jpg"
-    if out.exists():
-        return out
-
-    with PILImage.open(path) as im:
-        im = im.convert("RGB")
-        src_w, src_h = im.size
-        target_ratio = target_w / target_h
-        src_ratio = src_w / src_h
-        if src_ratio > target_ratio:
-            new_w = int(src_h * target_ratio)
-            left = (src_w - new_w) // 2
-            im = im.crop((left, 0, left + new_w, src_h))
-        else:
-            new_h = int(src_w / target_ratio)
-            top = (src_h - new_h) // 2
-            im = im.crop((0, top, src_w, top + new_h))
-        # ~220 DPI equivalent for A4 print quality feel
-        px_w = max(1200, int(target_w / 72 * 220))
-        px_h = max(800, int(target_h / 72 * 220))
-        im = im.resize((px_w, px_h), PILImage.Resampling.LANCZOS)
-        im.save(out, "JPEG", quality=90, optimize=True)
-    return out
+def enhance_photo(im: PILImage.Image) -> PILImage.Image:
+    im = ImageEnhance.Contrast(im).enhance(1.08)
+    im = ImageEnhance.Color(im).enhance(1.06)
+    im = ImageEnhance.Sharpness(im).enhance(1.12)
+    return im
 
 
 class NapoliBrochureGenerator:
@@ -162,307 +144,370 @@ class NapoliBrochureGenerator:
         data_file: Path = DEFAULT_DATA,
         images_dir: Path = DEFAULT_IMAGES,
         output_dir: Path = DEFAULT_OUTPUT,
-        logo_path: Path = DEFAULT_LOGO,
     ):
         self.data_file = Path(data_file)
         self.images_dir = Path(images_dir)
         self.output_dir = Path(output_dir)
-        self.logo_path = Path(logo_path)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.cache_dir = self.output_dir / ".cache"
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.page_w, self.page_h = A4
-        self.m = 1.4 * cm
 
     def load_data(self) -> dict:
         with open(self.data_file, "r", encoding="utf-8") as f:
             return json.load(f)
 
     def resolve_images(self, prop: dict) -> list[Path]:
-        names = []
+        names: list[str] = []
         hero = prop.get("hero_image")
         if hero:
             names.append(hero)
         for name in prop.get("images", []):
             if name not in names:
                 names.append(name)
-        paths = []
-        for name in names:
-            path = self.images_dir / name
-            if path.exists():
-                paths.append(path)
-        return paths
+        return [p for n in names if (p := self.images_dir / n).exists()]
 
-    def draw_gold_line(self, c: canvas.Canvas, x1, y, x2, width=1.2):
-        c.setStrokeColor(COLORS["oro"])
-        c.setLineWidth(width)
-        c.line(x1, y, x2, y)
+    def prepare_cover(self, image_path: Path) -> Path:
+        """Full-bleed cover with cinematic bottom gradient + film grain feel."""
+        out = self.cache_dir / f"cover_{image_path.stem}.jpg"
+        # Always rebuild for consistent look while iterating designs
+        px_w, px_h = 1654, 2339  # ~200 dpi A4
+        with PILImage.open(image_path) as im:
+            im = enhance_photo(im.convert("RGB"))
+            im = cover_crop(im, px_w, px_h)
 
-    def draw_header_band(self, c: canvas.Canvas, brand: dict):
-        band_h = 2.2 * cm
-        c.setFillColor(COLORS["nero"])
-        c.rect(0, self.page_h - band_h, self.page_w, band_h, fill=1, stroke=0)
-        c.setStrokeColor(COLORS["oro"])
-        c.setLineWidth(2)
-        c.line(0, self.page_h - band_h, self.page_w, self.page_h - band_h)
+        overlay = PILImage.new("RGBA", im.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+        # Top vignette
+        for i in range(220):
+            alpha = int(90 * (1 - i / 220))
+            draw.line([(0, i), (px_w, i)], fill=(8, 8, 8, alpha))
+        # Bottom cinematic wash — smooth, no hard box
+        for i in range(1400):
+            y = px_h - 1400 + i
+            t = i / 1400
+            # ease-in curve keeps upper photo open, bottom nearly opaque
+            alpha = int(10 + 235 * (t ** 1.55))
+            draw.line([(0, y), (px_w, y)], fill=(8, 8, 8, min(alpha, 248)))
+        # Soft lower veil (no hard edges)
+        for i in range(420):
+            y = px_h - 420 + i
+            t = i / 420
+            alpha = int(40 * t)
+            draw.line([(0, y), (px_w, y)], fill=(8, 8, 8, alpha))
+        # Side vignette
+        for i in range(120):
+            alpha = int(50 * (1 - i / 120))
+            draw.line([(i, 0), (i, px_h)], fill=(0, 0, 0, alpha))
+            draw.line([(px_w - 1 - i, 0), (px_w - 1 - i, px_h)], fill=(0, 0, 0, alpha))
 
-        logo_x = self.m
-        text_x = self.m
-        if self.logo_path.exists():
-            logo_size = 1.5 * cm
-            c.drawImage(
-                str(self.logo_path),
-                logo_x,
-                self.page_h - band_h + 0.35 * cm,
-                width=logo_size,
-                height=logo_size,
-                mask="auto",
-                preserveAspectRatio=True,
-            )
-            text_x = logo_x + logo_size + 0.35 * cm
+        composed = PILImage.alpha_composite(im.convert("RGBA"), overlay).convert("RGB")
+        composed = composed.filter(ImageFilter.GaussianBlur(radius=0.35))
+        composed.save(out, "JPEG", quality=92, optimize=True)
+        return out
 
-        c.setFillColor(COLORS["oro"])
-        c.setFont(FONTS["title"], 13)
-        c.drawString(text_x, self.page_h - 1.0 * cm, brand.get("name", "La Bellezza di Napoli"))
-        c.setFont(FONTS["body"], 8)
-        c.setFillColor(colors.HexColor("#C8C8C8"))
-        c.drawString(
-            text_x,
-            self.page_h - 1.55 * cm,
-            f"{brand.get('collection', 'Collection')}  ·  {brand.get('tagline', '')}",
-        )
+    def prepare_panel(self, image_path: Path, w_pt: float, h_pt: float, tag: str) -> Path:
+        out = self.cache_dir / f"panel_{image_path.stem}_{tag}.jpg"
+        px_w = max(900, int(w_pt / 72 * 200))
+        px_h = max(700, int(h_pt / 72 * 200))
+        with PILImage.open(image_path) as im:
+            im = enhance_photo(im.convert("RGB"))
+            im = cover_crop(im, px_w, px_h)
+            im.save(out, "JPEG", quality=90, optimize=True)
+        return out
 
-    def draw_footer(self, c: canvas.Canvas, brand: dict, page_label: str):
-        y = 0.7 * cm
-        self.draw_gold_line(c, self.m, 1.15 * cm, self.page_w - self.m, width=0.8)
-        c.setFont(FONTS["body"], 7)
-        c.setFillColor(COLORS["grigio"])
-        left = f"{brand.get('name', 'La Bellezza di Napoli')}  ·  {datetime.now().strftime('%Y')}"
-        c.drawString(self.m, y, left)
-        c.drawRightString(self.page_w - self.m, y, page_label)
-
-    def draw_fact_chips(self, c: canvas.Canvas, prop: dict, y: float) -> float:
-        def plural(n, singular, plural_form):
-            try:
-                value = int(n)
-            except (TypeError, ValueError):
-                return f"{n} {plural_form}"
-            return f"{value} {singular if value == 1 else plural_form}"
-
-        chips = [
-            plural(prop.get("guests", "—"), "ospite", "ospiti"),
-            plural(prop.get("rooms", "—"), "camera", "camere"),
-            plural(prop.get("beds", "—"), "letto", "letti"),
-            plural(prop.get("bathrooms", "—"), "bagno", "bagni"),
-        ]
-        gap = 0.25 * cm
-        chip_h = 0.85 * cm
-        total_w = self.page_w - 2 * self.m
-        chip_w = (total_w - gap * (len(chips) - 1)) / len(chips)
-        x = self.m
-        for chip in chips:
-            draw_rounded_rect(
-                c, x, y - chip_h, chip_w, chip_h,
-                radius=4, fill=COLORS["crema"], stroke=COLORS["oro"], stroke_width=0.8,
-            )
-            c.setFillColor(COLORS["nero"])
-            c.setFont(FONTS["body_bold"], 9)
-            c.drawCentredString(x + chip_w / 2, y - chip_h + 0.28 * cm, chip)
-            x += chip_w + gap
-        return y - chip_h - 0.45 * cm
+    def draw_gold_rule(self, c: canvas.Canvas, x, y, length, weight=1.1):
+        c.setStrokeColor(C["oro"])
+        c.setLineWidth(weight)
+        c.line(x, y, x + length, y)
 
     def draw_page_one(self, c: canvas.Canvas, prop: dict, brand: dict, images: list[Path]):
-        self.draw_header_band(c, brand)
-        y = self.page_h - 2.7 * cm
+        """Full-bleed cinematic cover."""
+        cover = self.prepare_cover(images[0])
+        c.drawImage(str(cover), 0, 0, width=self.page_w, height=self.page_h)
 
-        # Title block
-        c.setFillColor(COLORS["rosso"])
-        c.setFont(FONTS["title"], 20)
-        title_lines = wrap_text(c, prop["name"], FONTS["title"], 20, self.page_w - 2 * self.m)
-        for line in title_lines[:2]:
-            c.drawString(self.m, y, line)
-            y -= 0.75 * cm
+        # Thin gold frame inset
+        inset = 0.45 * cm
+        c.setStrokeColor(C["oro"])
+        c.setLineWidth(1.1)
+        c.setStrokeAlpha(0.9)
+        c.rect(inset, inset, self.page_w - 2 * inset, self.page_h - 2 * inset, fill=0, stroke=1)
+        c.setStrokeAlpha(1)
 
-        subtitle = prop.get("subtitle") or prop.get("location", "")
-        c.setFillColor(COLORS["blu"])
-        c.setFont(FONTS["italic"], 11)
-        c.drawString(self.m, y, subtitle)
-        y -= 0.25 * cm
-        self.draw_gold_line(c, self.m, y, self.m + 4.5 * cm, width=1.5)
-        y -= 0.45 * cm
+        # Vertical brand mark (graphic impact)
+        c.saveState()
+        c.translate(1.05 * cm, self.page_h / 2)
+        c.rotate(90)
+        c.setFillColor(C["oro"])
+        c.setFont(FONTS["sans_bd"], 8)
+        c.drawCentredString(0, 0, "LA BELLEZZA DI NAPOLI  ·  COLLECTION")
+        c.restoreState()
 
-        # Hero image
-        hero_h = 11.2 * cm
-        hero_w = self.page_w - 2 * self.m
-        if images:
-            hero = cover_image(images[0], hero_w, hero_h, self.cache_dir)
-            c.drawImage(str(hero), self.m, y - hero_h, width=hero_w, height=hero_h)
-            # thin gold frame
-            c.setStrokeColor(COLORS["oro"])
-            c.setLineWidth(1.2)
-            c.rect(self.m, y - hero_h, hero_w, hero_h, fill=0, stroke=1)
-        else:
-            draw_rounded_rect(
-                c, self.m, y - hero_h, hero_w, hero_h,
-                radius=0, fill=COLORS["crema"], stroke=COLORS["oro"],
-            )
-            c.setFillColor(COLORS["grigio"])
-            c.setFont(FONTS["body"], 10)
-            c.drawCentredString(self.page_w / 2, y - hero_h / 2, "Immagine non disponibile")
-        y -= hero_h + 0.55 * cm
-
-        # Description
-        c.setFillColor(COLORS["nero"])
-        c.setFont(FONTS["body"], 10)
-        desc = prop.get("description") or prop.get("long_description", "")
-        for line in wrap_text(c, desc, FONTS["body"], 10, self.page_w - 2 * self.m)[:6]:
-            c.drawString(self.m, y, line)
-            y -= 0.42 * cm
-        y -= 0.25 * cm
-
-        y = self.draw_fact_chips(c, prop, y)
-
-        # Highlights strip
-        highlights = prop.get("highlight_services") or prop.get("services", [])[:6]
-        if highlights:
-            c.setFillColor(COLORS["antracite"])
-            strip_h = 1.7 * cm
-            c.rect(0, y - strip_h, self.page_w, strip_h, fill=1, stroke=0)
-            c.setFillColor(COLORS["oro"])
-            c.setFont(FONTS["body_bold"], 8)
-            c.drawString(self.m, y - 0.55 * cm, "HIGHLIGHTS")
-            c.setFillColor(COLORS["bianco"])
-            c.setFont(FONTS["body"], 9)
-            c.drawString(self.m, y - 1.15 * cm, "  ·  ".join(highlights[:6]))
-            y -= strip_h + 0.35 * cm
-
-        # CTA / price
-        price = prop.get("price_per_night", "Su richiesta")
-        draw_rounded_rect(
-            c, self.m, 1.5 * cm, self.page_w - 2 * self.m, 1.5 * cm,
-            radius=5, fill=COLORS["rosso"], stroke=None,
-        )
-        c.setFillColor(COLORS["bianco"])
-        c.setFont(FONTS["body_bold"], 11)
-        c.drawString(self.m + 0.45 * cm, 2.35 * cm, "Prenota il tuo soggiorno")
-        c.setFont(FONTS["body"], 9)
-        c.drawString(self.m + 0.45 * cm, 1.85 * cm, f"Tariffa: {price}  ·  Check-in {prop.get('check_in', '15:00')} / Check-out {prop.get('check_out', '11:00')}")
-        phone = prop.get("contact_phone") or brand.get("phone", "")
-        if phone:
-            c.setFont(FONTS["body_bold"], 10)
-            c.drawRightString(self.page_w - self.m - 0.45 * cm, 2.1 * cm, phone)
-
-        self.draw_footer(c, brand, "1 / 2")
-
-    def draw_page_two(self, c: canvas.Canvas, prop: dict, brand: dict, images: list[Path]):
-        self.draw_header_band(c, brand)
-        y = self.page_h - 2.75 * cm
-
-        c.setFillColor(COLORS["rosso"])
-        c.setFont(FONTS["title"], 16)
-        c.drawString(self.m, y, "Scopri lo spazio")
-        y -= 0.2 * cm
-        self.draw_gold_line(c, self.m, y, self.m + 3.2 * cm)
-        y -= 0.4 * cm
-
-        # Gallery 2x2
-        gallery = images[1:5] if len(images) > 1 else images[:1]
-        gap = 0.3 * cm
-        cell_w = (self.page_w - 2 * self.m - gap) / 2
-        cell_h = 5.4 * cm
-        for idx, img_path in enumerate(gallery[:4]):
-            col = idx % 2
-            row = idx // 2
-            x = self.m + col * (cell_w + gap)
-            iy = y - (row + 1) * cell_h - row * gap
-            fitted = cover_image(img_path, cell_w, cell_h, self.cache_dir)
-            c.drawImage(str(fitted), x, iy, width=cell_w, height=cell_h)
-            c.setStrokeColor(COLORS["oro"])
-            c.setLineWidth(0.8)
-            c.rect(x, iy, cell_w, cell_h, fill=0, stroke=1)
-
-        rows = max(1, (min(4, len(gallery)) + 1) // 2)
-        y -= rows * cell_h + (rows - 1) * gap + 0.55 * cm
-
-        # Two columns: services + nearby
-        col_gap = 0.5 * cm
-        col_w = (self.page_w - 2 * self.m - col_gap) / 2
-        left_x = self.m
-        right_x = self.m + col_w + col_gap
-        section_top = y
-
-        # Services
-        c.setFillColor(COLORS["blu"])
-        c.setFont(FONTS["title"], 12)
-        c.drawString(left_x, y, "Servizi")
-        y_left = y - 0.35 * cm
-        self.draw_gold_line(c, left_x, y_left, left_x + 1.8 * cm, width=1)
-        y_left -= 0.45 * cm
-        c.setFillColor(COLORS["nero"])
-        c.setFont(FONTS["body"], 8.5)
-        services = prop.get("services", [])
-        for service in services[:12]:
-            c.drawString(left_x, y_left, f"•  {service}")
-            y_left -= 0.38 * cm
-
-        # Nearby
-        y_right = section_top
-        c.setFillColor(COLORS["blu"])
-        c.setFont(FONTS["title"], 12)
-        c.drawString(right_x, y_right, "Nei dintorni")
-        y_right -= 0.35 * cm
-        self.draw_gold_line(c, right_x, y_right, right_x + 2.4 * cm, width=1)
-        y_right -= 0.45 * cm
-        c.setFillColor(COLORS["nero"])
-        c.setFont(FONTS["body"], 8.5)
-        for item in prop.get("nearby_attractions", [])[:8]:
-            c.drawString(right_x, y_right, f"•  {item}")
-            y_right -= 0.38 * cm
-
-        y = min(y_left, y_right) - 0.45 * cm
-
-        # Practical info box
-        box_h = 3.4 * cm
-        draw_rounded_rect(
-            c, self.m, y - box_h, self.page_w - 2 * self.m, box_h,
-            radius=6, fill=COLORS["crema"], stroke=COLORS["oro"], stroke_width=1.1,
-        )
-        pad = 0.4 * cm
-        tx = self.m + pad
-        ty = y - 0.55 * cm
-        c.setFillColor(COLORS["rosso"])
-        c.setFont(FONTS["title"], 11)
-        c.drawString(tx, ty, "Informazioni pratiche")
-        ty -= 0.5 * cm
-        c.setFillColor(COLORS["nero"])
-        c.setFont(FONTS["body"], 9)
-        lines = [
-            f"Indirizzo: {prop.get('address', '—')}",
-            f"Check-in: {prop.get('check_in', '15:00')}   ·   Check-out: {prop.get('check_out', '11:00')}   ·   Soggiorno minimo: {prop.get('minimum_stay', 1)} notte/i",
-            f"Contatto: {prop.get('contact_name', '')}  ·  {prop.get('contact_phone', '')}",
-            f"Email: {prop.get('contact_email', '')}",
-        ]
-        for line in lines:
-            for wrapped in wrap_text(c, line, FONTS["body"], 9, self.page_w - 2 * self.m - 2 * pad):
-                c.drawString(tx, ty, wrapped)
-                ty -= 0.4 * cm
-
-        # Bottom brand strip
-        c.setFillColor(COLORS["nero"])
-        c.rect(0, 1.4 * cm, self.page_w, 1.1 * cm, fill=1, stroke=0)
-        c.setFillColor(COLORS["oro"])
-        c.setFont(FONTS["body_bold"], 9)
+        # Brand top
+        c.setFillColor(C["oro_chiaro"])
+        c.setFont(FONTS["sans_bd"], 9)
+        brand_line = brand.get("name", "La Bellezza di Napoli").upper()
+        c.drawCentredString(self.page_w / 2, self.page_h - 1.25 * cm, brand_line)
+        self.draw_gold_rule(c, self.page_w / 2 - 2.0 * cm, self.page_h - 1.55 * cm, 4.0 * cm, 1.0)
+        c.setFillColor(colors.Color(1, 1, 1, alpha=0.88))
+        c.setFont(FONTS["sans"], 7.5)
         c.drawCentredString(
             self.page_w / 2,
-            1.8 * cm,
-            f"{brand.get('name', 'La Bellezza di Napoli')}  ·  {brand.get('tagline', 'Vivi Napoli, ama Napoli')}",
+            self.page_h - 1.95 * cm,
+            (brand.get("tagline") or "Vivi Napoli, ama Napoli").upper(),
         )
 
-        self.draw_footer(c, brand, "2 / 2")
+        # Bottom editorial title block (fixed zone, no overlaps)
+        left = 1.35 * cm
+        max_w = self.page_w - 2.7 * cm
+
+        # Accent bar
+        c.setFillColor(C["rosso"])
+        c.rect(left, 6.55 * cm, 1.35 * cm, 0.14 * cm, fill=1, stroke=0)
+
+        c.setFillColor(C["oro"])
+        c.setFont(FONTS["sans_bd"], 8.5)
+        location = (prop.get("subtitle") or prop.get("location") or "").upper()
+        c.drawString(left, 6.0 * cm, location)
+
+        c.setFillColor(C["bianco"])
+        c.setFont(FONTS["display"], 34)
+        title = prop["name"]
+        parts = title.split(" ")
+        if len(parts) >= 4:
+            title_lines = [" ".join(parts[:2]), " ".join(parts[2:])]
+        else:
+            title_lines = wrap_text(c, title, FONTS["display"], 34, max_w)[:2]
+        y = 5.0 * cm
+        for line in title_lines:
+            c.drawString(left, y, line)
+            y -= 1.15 * cm
+
+        self.draw_gold_rule(c, left, y + 0.4 * cm, 3.6 * cm, 1.8)
+
+        # One short evocative line only
+        c.setFillColor(colors.Color(1, 1, 1, alpha=0.94))
+        c.setFont(FONTS["display_it"], 12)
+        blurb = "Fascino napoletano, comfort moderno e vista che resta impressa."
+        by = 2.45 * cm
+        for line in wrap_text(c, blurb, FONTS["display_it"], 12, max_w)[:2]:
+            c.drawString(left, by, line)
+            by -= 0.42 * cm
+
+        # Meta footer
+        c.setFillColor(C["bianco"])
+        c.setFont(FONTS["sans_md"], 8)
+        guests = prop.get("guests", "—")
+        rooms = prop.get("rooms", "—")
+        baths = prop.get("bathrooms", "—")
+        bath_label = "BAGNO" if str(baths) == "1" else "BAGNI"
+        meta = f"{guests} OSPITI   ·   {rooms} CAMERE   ·   {baths} {bath_label}"
+        c.drawString(left, 1.2 * cm, meta)
+
+        phone = prop.get("contact_phone") or brand.get("phone", "")
+        if phone:
+            c.setFont(FONTS["sans_bd"], 10)
+            c.setFillColor(C["oro_chiaro"])
+            c.drawRightString(self.page_w - 1.2 * cm, 1.2 * cm, phone)
+
+    def draw_stat(self, c: canvas.Canvas, x, y, value, label):
+        c.setFillColor(C["oro"])
+        c.setFont(FONTS["display"], 22)
+        c.drawString(x, y, str(value))
+        c.setFillColor(C["grigio"])
+        c.setFont(FONTS["sans"], 7)
+        c.drawString(x, y - 0.35 * cm, label.upper())
+
+    def draw_page_two(self, c: canvas.Canvas, prop: dict, brand: dict, images: list[Path]):
+        """Editorial interior: photo architecture + refined type."""
+        # Cream ground
+        c.setFillColor(C["crema"])
+        c.rect(0, 0, self.page_w, self.page_h, fill=1, stroke=0)
+
+        # Left dark vertical panel
+        panel_w = 7.6 * cm
+        c.setFillColor(C["nero"])
+        c.rect(0, 0, panel_w, self.page_h, fill=1, stroke=0)
+
+        # Gold accent edge
+        c.setFillColor(C["oro"])
+        c.rect(panel_w, 0, 0.08 * cm, self.page_h, fill=1, stroke=0)
+
+        # Left panel content
+        x = 0.85 * cm
+        y = self.page_h - 1.5 * cm
+        c.setFillColor(C["oro"])
+        c.setFont(FONTS["sans_bd"], 7.5)
+        c.drawString(x, y, brand.get("name", "La Bellezza di Napoli").upper())
+        y -= 0.35 * cm
+        self.draw_gold_rule(c, x, y, 2.4 * cm, 0.9)
+
+        y -= 1.1 * cm
+        c.setFillColor(C["bianco"])
+        c.setFont(FONTS["display"], 18)
+        for line in wrap_text(c, "Un soggiorno nel cuore di Napoli", FONTS["display"], 18, panel_w - 1.7 * cm):
+            c.drawString(x, y, line)
+            y -= 0.7 * cm
+
+        y -= 0.35 * cm
+        c.setFillColor(colors.Color(1, 1, 1, alpha=0.82))
+        c.setFont(FONTS["sans"], 8.2)
+        long_desc = prop.get("long_description") or prop.get("description", "")
+        for line in wrap_text(c, long_desc, FONTS["sans"], 8.2, panel_w - 1.7 * cm)[:10]:
+            c.drawString(x, y, line)
+            y -= 0.36 * cm
+
+        # Stats block
+        y -= 0.55 * cm
+        self.draw_gold_rule(c, x, y, 2.0 * cm, 0.8)
+        y -= 1.0 * cm
+        gap = 1.7 * cm
+        self.draw_stat(c, x, y, prop.get("guests", "—"), "Ospiti")
+        self.draw_stat(c, x + gap, y, prop.get("rooms", "—"), "Camere")
+        self.draw_stat(c, x + 2 * gap, y, prop.get("beds", "—"), "Letti")
+
+        # Highlights on dark panel
+        y -= 1.5 * cm
+        c.setFillColor(C["oro"])
+        c.setFont(FONTS["sans_bd"], 7.5)
+        c.drawString(x, y, "ESSENZIALI")
+        y -= 0.45 * cm
+        highlights = prop.get("highlight_services") or prop.get("services", [])[:6]
+        c.setFillColor(C["bianco"])
+        c.setFont(FONTS["sans"], 8)
+        for item in highlights[:6]:
+            c.setFillColor(C["oro"])
+            c.drawString(x, y, "—")
+            c.setFillColor(colors.Color(1, 1, 1, alpha=0.9))
+            c.drawString(x + 0.35 * cm, y, item)
+            y -= 0.4 * cm
+
+        # Contact bottom of dark panel
+        c.setFillColor(C["fumo"])
+        c.rect(0, 0, panel_w, 3.5 * cm, fill=1, stroke=0)
+        c.setFillColor(C["oro"])
+        c.setFont(FONTS["sans_bd"], 7)
+        c.drawString(x, 2.7 * cm, "PRENOTA")
+        c.setFillColor(C["bianco"])
+        c.setFont(FONTS["display"], 11)
+        phone = prop.get("contact_phone") or brand.get("phone", "")
+        c.drawString(x, 2.15 * cm, phone)
+        c.setFont(FONTS["sans"], 7.2)
+        c.setFillColor(colors.Color(1, 1, 1, alpha=0.75))
+        email = prop.get("contact_email") or brand.get("email", "")
+        for line in wrap_text(c, email, FONTS["sans"], 7.2, panel_w - 1.6 * cm):
+            c.drawString(x, 1.65 * cm, line)
+            break
+        c.setFont(FONTS["sans"], 6.8)
+        addr = prop.get("address", "")
+        for i, line in enumerate(wrap_text(c, addr, FONTS["sans"], 6.8, panel_w - 1.6 * cm)[:2]):
+            c.drawString(x, 1.15 * cm - i * 0.28 * cm, line)
+
+        # Right side photo architecture
+        right_x = panel_w + 0.35 * cm
+        right_w = self.page_w - right_x - 0.55 * cm
+        top = self.page_h - 0.55 * cm
+
+        # Prefer view shot as large panel, bedroom details as supporting
+        by_name = {p.name: p for p in images}
+        preferred_big = by_name.get("daniele-vico-pontecorvo-6.jpeg") or by_name.get("daniele-vico-pontecorvo-3.jpeg") or images[min(1, len(images)-1)]
+        preferred_s1 = by_name.get("daniele-vico-pontecorvo-2.jpeg") or images[0]
+        preferred_s2 = by_name.get("daniele-vico-pontecorvo-10.jpeg") or images[-1]
+
+        # Large hero-like photo
+        big_h = 11.8 * cm
+        big = self.prepare_panel(preferred_big, right_w, big_h, "big")
+        c.drawImage(str(big), right_x, top - big_h, width=right_w, height=big_h)
+
+        # Caption over lower edge of big photo
+        c.setFillColor(colors.Color(0, 0, 0, alpha=0.5))
+        c.rect(right_x, top - big_h, right_w, 1.05 * cm, fill=1, stroke=0)
+        c.setFillColor(C["oro_chiaro"])
+        c.setFont(FONTS["sans_bd"], 7)
+        c.drawString(right_x + 0.35 * cm, top - big_h + 0.58 * cm, "NAPOLI · CENTRO STORICO")
+        c.setFillColor(C["bianco"])
+        c.setFont(FONTS["display_it"], 9)
+        c.drawString(right_x + 0.35 * cm, top - big_h + 0.22 * cm, "Luce, balcone e skyline mediterraneo")
+
+        # Asymmetric small photos: taller left, shorter right offset
+        gap = 0.28 * cm
+        small_y = top - big_h - gap
+        left_h = 6.5 * cm
+        right_h = 5.5 * cm
+        small_w = (right_w - gap) / 2
+        left_img = self.prepare_panel(preferred_s1, small_w, left_h, "s1")
+        right_img = self.prepare_panel(preferred_s2, small_w, right_h, "s2")
+        c.drawImage(str(left_img), right_x, small_y - left_h, width=small_w, height=left_h)
+        c.drawImage(
+            str(right_img),
+            right_x + small_w + gap,
+            small_y - right_h - 0.5 * cm,
+            width=small_w,
+            height=right_h,
+        )
+        # Gold corner accent on right photo
+        ax = right_x + small_w + gap
+        ay = small_y - right_h - 0.5 * cm
+        c.setStrokeColor(C["oro"])
+        c.setLineWidth(1.4)
+        c.line(ax, ay + right_h, ax + 1.2 * cm, ay + right_h)
+        c.line(ax, ay + right_h, ax, ay + right_h - 1.2 * cm)
+
+        # Bottom strip: nearby + services
+        strip_top = small_y - left_h - 0.3 * cm
+        strip_h = strip_top - 0.55 * cm
+        c.setFillColor(C["bianco"])
+        c.rect(right_x, 0.55 * cm, right_w, strip_h, fill=1, stroke=0)
+        c.setStrokeColor(C["oro"])
+        c.setLineWidth(0.8)
+        c.line(right_x, 0.55 * cm + strip_h, right_x + right_w, 0.55 * cm + strip_h)
+
+        # Inner content
+        tx = right_x + 0.4 * cm
+        ty = 0.55 * cm + strip_h - 0.55 * cm
+        c.setFillColor(C["rosso"])
+        c.setFont(FONTS["sans_bd"], 7.5)
+        c.drawString(tx, ty, "NEI DINTORNI")
+        ty -= 0.35 * cm
+        c.setFillColor(C["ink"])
+        c.setFont(FONTS["sans"], 7.3)
+        nearby = prop.get("nearby_attractions", [])
+        # two columns of nearby
+        col_w = (right_w - 0.9 * cm) / 2
+        for i, item in enumerate(nearby[:6]):
+            col = i % 2
+            row = i // 2
+            c.drawString(tx + col * col_w, ty - row * 0.32 * cm, f"·  {item}")
+
+        ty -= 1.3 * cm
+        self.draw_gold_rule(c, tx, ty, 1.8 * cm, 0.8)
+        ty -= 0.4 * cm
+        c.setFillColor(C["rosso"])
+        c.setFont(FONTS["sans_bd"], 7.5)
+        c.drawString(tx, ty, "SERVIZI")
+        ty -= 0.32 * cm
+        c.setFillColor(C["ink"])
+        c.setFont(FONTS["sans"], 7)
+        services = ", ".join(prop.get("services", [])[:10])
+        for line in wrap_text(c, services, FONTS["sans"], 7, right_w - 0.85 * cm)[:3]:
+            c.drawString(tx, ty, line)
+            ty -= 0.28 * cm
+
+        # Practical line
+        ty -= 0.15 * cm
+        c.setFillColor(C["grigio"])
+        c.setFont(FONTS["sans"], 6.8)
+        practical = (
+            f"Check-in {prop.get('check_in', '15:00')}  ·  "
+            f"Check-out {prop.get('check_out', '11:00')}  ·  "
+            f"Min. {prop.get('minimum_stay', 1)} notte"
+        )
+        c.drawString(tx, max(0.75 * cm, ty), practical)
 
     def generate_brochure(self, prop: dict, brand: dict) -> Path | None:
         images = self.resolve_images(prop)
         if not images:
-            print(f"⚠️  Nessuna immagine trovata per: {prop.get('name')} — salto.")
+            print(f"⚠️  Nessuna immagine per: {prop.get('name')} — salto.")
             return None
 
         filename = f"brochure_{slugify(prop['name'])}.pdf"
@@ -471,23 +516,20 @@ class NapoliBrochureGenerator:
         c = canvas.Canvas(str(output_path), pagesize=A4)
         c.setTitle(f"{prop['name']} — {brand.get('name', 'La Bellezza di Napoli')}")
         c.setAuthor(brand.get("name", "La Bellezza di Napoli"))
-        c.setSubject("Brochure case vacanze Napoli Collection")
+        c.setSubject("Brochure premium Napoli Collection")
 
         self.draw_page_one(c, prop, brand, images)
         c.showPage()
         self.draw_page_two(c, prop, brand, images)
         c.save()
-
         print(f"✅ Brochure generata: {output_path}")
         return output_path
 
     def generate_all(self, property_id: int | None = None, include_inactive: bool = False) -> list[Path]:
         data = self.load_data()
         brand = data.get("brand", {})
-        props = data.get("properties", [])
         generated: list[Path] = []
-
-        for prop in props:
+        for prop in data.get("properties", []):
             if property_id is not None and prop.get("id") != property_id:
                 continue
             if not include_inactive and prop.get("active") is False:
@@ -499,13 +541,13 @@ class NapoliBrochureGenerator:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Genera brochure PDF La Bellezza di Napoli")
-    parser.add_argument("--property-id", type=int, default=None, help="Genera solo la proprietà con questo id")
-    parser.add_argument("--data-file", type=Path, default=DEFAULT_DATA, help="Percorso al JSON dati")
-    parser.add_argument("--images-dir", type=Path, default=DEFAULT_IMAGES, help="Cartella immagini")
-    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT, help="Cartella output PDF")
-    parser.add_argument("--include-inactive", action="store_true", help="Include proprietà con active=false")
-    parser.add_argument("--verbose", action="store_true", help="Log aggiuntivo")
+    parser = argparse.ArgumentParser(description="Genera brochure PDF premium La Bellezza di Napoli")
+    parser.add_argument("--property-id", type=int, default=None)
+    parser.add_argument("--data-file", type=Path, default=DEFAULT_DATA)
+    parser.add_argument("--images-dir", type=Path, default=DEFAULT_IMAGES)
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--include-inactive", action="store_true")
+    parser.add_argument("--verbose", action="store_true")
     return parser
 
 
@@ -517,10 +559,8 @@ def main(argv: list[str] | None = None) -> int:
         output_dir=args.output_dir,
     )
     if args.verbose:
+        print(f"Fonts: {FONTS}")
         print(f"Data: {generator.data_file}")
-        print(f"Images: {generator.images_dir}")
-        print(f"Output: {generator.output_dir}")
-
     results = generator.generate_all(
         property_id=args.property_id,
         include_inactive=args.include_inactive,
