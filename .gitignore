@@ -25,6 +25,9 @@
 /data/ota-uploads/
 *.pem
 
+# napoli brochure generator cache
+/napoli-collection/output/.cache/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
