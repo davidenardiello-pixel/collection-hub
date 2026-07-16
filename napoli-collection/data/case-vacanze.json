@@ -1,0 +1,86 @@
+{
+  "properties": [
+    {
+      "id": 1,
+      "name": "Villa Vesuvio",
+      "location": "Pompei",
+      "description": "Splendida villa con vista panoramica sul Golfo di Napoli. Perfetta per famiglie e gruppi, offre comfort e lusso in uno dei luoghi più affascinanti della Campania.",
+      "long_description": "Situata a pochi passi dagli scavi archeologici di Pompei, questa elegante villa combina storia e modernità. Le sue ampie terrazze affacciate sul mare permettono di godere di tramonti indimenticabili.",
+      "services": [
+        "WiFi Fiber",
+        "Piscina privata",
+        "Cucina attrezzata",
+        "Giardino fiorito",
+        "Parcheggio privato",
+        "Aria condizionata",
+        "TV Smart",
+        "Lavastoviglie"
+      ],
+      "rooms": 4,
+      "bathrooms": 3,
+      "guests": 10,
+      "price_per_night": "€150-250",
+      "price_per_week": "€900-1500",
+      "currency": "EUR",
+      "contact_name": "Maria Rossi",
+      "contact_phone": "+39 081 234567",
+      "contact_email": "info@villavesuivio.it",
+      "address": "Via Archeologica 42, 80045 Pompei (NA)",
+      "coordinates": {
+        "latitude": 40.7509,
+        "longitude": 14.4365
+      },
+      "images": [
+        "villa-vesuvio-1.jpg",
+        "villa-vesuvio-2.jpg",
+        "villa-vesuvio-3.jpg"
+      ],
+      "check_in": "15:00",
+      "check_out": "11:00",
+      "minimum_stay": 3,
+      "rating": 4.9,
+      "reviews": 47
+    },
+    {
+      "id": 2,
+      "name": "Casa del Mare",
+      "location": "Sorrento",
+      "description": "Incantevole casa a picco sul mare con accesso privato alla spiaggia. Ideale per chi cerca relax e bellezza naturale.",
+      "long_description": "Questa affascinante casa è incastonata tra la roccia e il mare, offrendo una vista spettacolare sulla Costiera Amalfitana. Perfetta per coppie e piccole famiglie.",
+      "services": [
+        "WiFi",
+        "Terrazza mare",
+        "Accesso privato spiaggia",
+        "Cucina moderna",
+        "Bagno turco",
+        "Jacuzzi",
+        "Frigobar",
+        "Riscaldamento"
+      ],
+      "rooms": 2,
+      "bathrooms": 2,
+      "guests": 5,
+      "price_per_night": "€180-280",
+      "price_per_week": "€1100-1800",
+      "currency": "EUR",
+      "contact_name": "Antonio Ferraro",
+      "contact_phone": "+39 081 878901",
+      "contact_email": "info@casadelmare.it",
+      "address": "Via Marina Grande 15, 80067 Sorrento (NA)",
+      "coordinates": {
+        "latitude": 40.6267,
+        "longitude": 14.3742
+      },
+      "images": [
+        "casa-mare-1.jpg",
+        "casa-mare-2.jpg",
+        "casa-mare-3.jpg"
+      ],
+      "check_in": "16:00",
+      "check_out": "10:00",
+      "minimum_stay": 2,
+      "rating": 4.8,
+      "reviews": 63
+    }
+  ]
+}
