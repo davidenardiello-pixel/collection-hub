@@ -89,10 +89,27 @@ export function Dashboard() {
   if (!data) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 rc-main-pattern px-4 text-center">
-        <p className="text-sm text-rose-300">
+        <p className="max-w-lg text-sm text-rose-300">
           {error ?? "Impossibile caricare la dashboard condivisa."}
         </p>
-        <Button onClick={() => void refresh()}>Riprova</Button>
+        <p className="max-w-lg text-xs text-rc-muted">
+          Di solito è Supabase in pausa o chiavi errate su Vercel. Riattiva il
+          progetto su supabase.com e controlla le variabili d&apos;ambiente, poi
+          riprova.
+        </p>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button onClick={() => void refresh()}>Riprova</Button>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              void fetch("/api/auth/logout", { method: "POST" }).finally(() => {
+                window.location.href = "/login";
+              });
+            }}
+          >
+            Esci e riaccedi
+          </Button>
+        </div>
       </div>
     );
   }
