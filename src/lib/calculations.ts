@@ -399,6 +399,125 @@ export function getPropertySummary(
   };
 }
 
+export type PropertyScope = string | readonly string[] | undefined;
+
+export function filterByPropertyScope<T extends { propertyId: string }>(
+  items: T[],
+  scope?: PropertyScope,
+): T[] {
+  if (!scope) {
+    return items;
+  }
+
+  if (typeof scope === "string") {
+    return items.filter((item) => item.propertyId === scope);
+  }
+
+  const allowed = new Set(scope);
+  if (allowed.size === 0) {
+    return [];
+  }
+
+  return items.filter((item) => allowed.has(item.propertyId));
+}
+
+export function getPropertiesScopeSummary(
+  propertyIds: string[],
+  bookings: Booking[],
+  expenses: Expense[],
+  properties: Property[],
+  categories: ExpenseCategory[],
+  platforms: Platform[],
+) {
+  const uniqueIds = [...new Set(propertyIds)];
+
+  if (uniqueIds.length === 0) {
+    const emptyMonths = getFiscalMonths().map((period) => ({
+      period,
+      label: getMonthLabel(period.month),
+      income: 0,
+      expenses: 0,
+      profit: 0,
+      margin: 0,
+    }));
+
+    return {
+      property: undefined,
+      scopeLabel: "Nessun appartamento",
+      income: 0,
+      expenses: 0,
+      profit: 0,
+      margin: 0,
+      monthlyAverage: 0,
+      rate: 0,
+      monthly: emptyMonths,
+      platforms: [] as { id: string; name: string; total: number }[],
+      categories: [] as { id: string; name: string; total: number }[],
+    };
+  }
+
+  if (uniqueIds.length === 1) {
+    const single = getPropertySummary(
+      uniqueIds[0],
+      bookings,
+      expenses,
+      properties,
+      categories,
+      platforms,
+    );
+
+    return {
+      ...single,
+      scopeLabel: single.property?.name ?? "Proprietà",
+    };
+  }
+
+  const scopeProperties = properties.filter((property) =>
+    uniqueIds.includes(property.id),
+  );
+  const matrix = getPropertiesMonthlyMatrix(
+    bookings,
+    expenses,
+    scopeProperties,
+  );
+  const aggregated = getAggregatedPropertiesMonthlyMatrix(matrix);
+
+  if (!aggregated) {
+    return getPropertiesScopeSummary([], bookings, expenses, properties, categories, platforms);
+  }
+
+  const totalMonthlyRent = scopeProperties.reduce(
+    (total, property) => total + property.monthlyRent,
+    0,
+  );
+
+  return {
+    property: undefined,
+    scopeLabel: aggregated.name,
+    income: aggregated.income,
+    expenses: aggregated.expenses,
+    profit: aggregated.profit,
+    margin: aggregated.margin,
+    monthlyAverage: aggregated.profit / 12,
+    rate: totalMonthlyRent > 0 ? aggregated.profit / totalMonthlyRent : 0,
+    monthly: aggregated.months,
+    platforms: getScopedPlatformBreakdown(
+      bookings,
+      platforms,
+      undefined,
+      uniqueIds,
+    ).filter((item) => item.total > 0),
+    categories: getScopedCategoryBreakdown(
+      expenses,
+      categories,
+      undefined,
+      uniqueIds,
+    )
+      .filter((item) => item.total > 0)
+      .sort((a, b) => b.total - a.total),
+  };
+}
+
 export function getPropertiesMonthBreakdown(
   period: MonthPeriod,
   bookings: Booking[],
@@ -627,11 +746,9 @@ export function getScopedPlatformBreakdown(
   bookings: Booking[],
   platforms: Platform[],
   period?: MonthPeriod,
-  propertyId?: string,
+  propertyScope?: PropertyScope,
 ) {
-  const filtered = propertyId
-    ? bookings.filter((booking) => booking.propertyId === propertyId)
-    : bookings;
+  const filtered = filterByPropertyScope(bookings, propertyScope);
   const total = period
     ? sumBookingsInPeriod(filtered, period)
     : sumBookings(filtered);
@@ -661,12 +778,10 @@ export function getScopedCategoryBreakdown(
   expenses: Expense[],
   categories: ExpenseCategory[],
   period?: MonthPeriod,
-  propertyId?: string,
+  propertyScope?: PropertyScope,
 ) {
   const scoped = period ? filterExpensesByPeriod(expenses, period) : expenses;
-  const filtered = propertyId
-    ? scoped.filter((expense) => expense.propertyId === propertyId)
-    : scoped;
+  const filtered = filterByPropertyScope(scoped, propertyScope);
   const total = sumExpenses(filtered);
 
   return categories.map((category) => {

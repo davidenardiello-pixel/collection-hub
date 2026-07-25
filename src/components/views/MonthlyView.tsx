@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import {
   formatCurrency,
   formatPercent,
+  filterByPropertyScope,
   getAggregatedPropertiesMonthlyMatrix,
   getAllPropertiesMonthlyCategoryMatrix,
   getAllPropertiesMonthlyPlatformMatrix,
@@ -99,6 +100,35 @@ export function MonthlyView({
     [properties, selectedCity],
   );
 
+  const scopedPropertyId =
+    selectedPropertyId === "all" ? undefined : selectedPropertyId;
+
+  const propertyScopeIds = useMemo(() => {
+    if (scopedPropertyId) {
+      return visibleProperties.some((property) => property.id === scopedPropertyId)
+        ? [scopedPropertyId]
+        : visibleProperties.map((property) => property.id);
+    }
+
+    return visibleProperties.map((property) => property.id);
+  }, [scopedPropertyId, visibleProperties]);
+
+  const propertyScope = useMemo(
+    () =>
+      propertyScopeIds.length === 1 ? propertyScopeIds[0] : propertyScopeIds,
+    [propertyScopeIds],
+  );
+
+  const scopedBookings = useMemo(
+    () => filterByPropertyScope(bookings, propertyScope),
+    [bookings, propertyScope],
+  );
+
+  const scopedExpenses = useMemo(
+    () => filterByPropertyScope(expenses, propertyScope),
+    [expenses, propertyScope],
+  );
+
   const detail = useMemo(
     () =>
       getMonthlyDetail(
@@ -150,13 +180,17 @@ export function MonthlyView({
         propertiesMatrix[0] ??
         null);
 
-  const monthTotals = propertiesMonthBreakdown.reduce(
-    (totals, property) => ({
-      income: totals.income + property.income,
-      expenses: totals.expenses + property.expenses,
-      profit: totals.profit + property.profit,
-    }),
-    { income: 0, expenses: 0, profit: 0 },
+  const monthTotals = useMemo(
+    () =>
+      propertiesMonthBreakdown.reduce(
+        (totals, property) => ({
+          income: totals.income + property.income,
+          expenses: totals.expenses + property.expenses,
+          profit: totals.profit + property.profit,
+        }),
+        { income: 0, expenses: 0, profit: 0 },
+      ),
+    [propertiesMonthBreakdown],
   );
 
   const monthPeriod = useMemo(
@@ -164,52 +198,29 @@ export function MonthlyView({
     [selectedMonth],
   );
 
-  const scopedPropertyId =
-    selectedPropertyId === "all" ? undefined : selectedPropertyId;
-
-  const scopedPlatforms = useMemo(
-    () =>
-      getScopedPlatformBreakdown(
-        bookings,
-        platforms,
-        monthPeriod,
-        scopedPropertyId,
-      ),
-    [bookings, platforms, monthPeriod, scopedPropertyId],
-  );
-
-  const scopedCategories = useMemo(
-    () =>
-      getScopedCategoryBreakdown(
-        expenses,
-        expenseCategories,
-        monthPeriod,
-        scopedPropertyId,
-      ),
-    [expenses, expenseCategories, monthPeriod, scopedPropertyId],
-  );
-
   const scopedTotals = useMemo(() => {
-    if (!scopedPropertyId) {
+    if (scopedPropertyId) {
+      const row = propertiesMonthBreakdown.find(
+        (property) => property.id === scopedPropertyId,
+      );
+
       return {
-        income: detail.income,
-        expenses: detail.expenses,
-        profit: detail.profit,
-        margin: detail.margin,
+        income: row?.income ?? 0,
+        expenses: row?.expenses ?? 0,
+        profit: row?.profit ?? 0,
+        margin: row?.margin ?? 0,
       };
     }
 
-    const row = propertiesMonthBreakdown.find(
-      (property) => property.id === scopedPropertyId,
-    );
+    const { income, expenses, profit } = monthTotals;
 
     return {
-      income: row?.income ?? 0,
-      expenses: row?.expenses ?? 0,
-      profit: row?.profit ?? 0,
-      margin: row?.margin ?? 0,
+      income,
+      expenses,
+      profit,
+      margin: income > 0 ? profit / income : 0,
     };
-  }, [scopedPropertyId, detail, propertiesMonthBreakdown]);
+  }, [scopedPropertyId, propertiesMonthBreakdown, monthTotals]);
 
   const propertyOccupancy = useMemo(() => {
     if (!occupancyMetricsAvailable(selectedMonth) || !scopedPropertyId) {
@@ -224,7 +235,32 @@ export function MonthlyView({
     scopedPropertyId
       ? (properties.find((property) => property.id === scopedPropertyId)?.name ??
         scopedPropertyId)
-      : "Tutti gli appartamenti";
+      : selectedCity === "all"
+        ? "Tutti gli appartamenti"
+        : (PROPERTY_CITIES.find((city) => city.id === selectedCity)?.label ??
+          selectedCity);
+
+  const scopedPlatforms = useMemo(
+    () =>
+      getScopedPlatformBreakdown(
+        scopedBookings,
+        platforms,
+        monthPeriod,
+        propertyScope,
+      ),
+    [scopedBookings, platforms, monthPeriod, propertyScope],
+  );
+
+  const scopedCategories = useMemo(
+    () =>
+      getScopedCategoryBreakdown(
+        scopedExpenses,
+        expenseCategories,
+        monthPeriod,
+        propertyScope,
+      ),
+    [scopedExpenses, expenseCategories, monthPeriod, propertyScope],
+  );
 
   const totalPlatforms = scopedPlatforms;
   const totalCategories = scopedCategories;
@@ -234,10 +270,10 @@ export function MonthlyView({
       getPropertiesMonthPlatformMatrix(
         monthPeriod,
         bookings,
-        properties,
+        visibleProperties,
         platforms,
       ),
-    [bookings, properties, platforms, monthPeriod],
+    [bookings, visibleProperties, platforms, monthPeriod],
   );
 
   const propertyCategoryMatrix = useMemo(
@@ -245,25 +281,28 @@ export function MonthlyView({
       getPropertiesMonthCategoryMatrix(
         monthPeriod,
         expenses,
-        properties,
+        visibleProperties,
         expenseCategories,
       ),
-    [expenses, properties, expenseCategories, monthPeriod],
+    [expenses, visibleProperties, expenseCategories, monthPeriod],
   );
 
   const activePropertyPlatforms = useMemo(() => {
     if (selectedPropertyId === "all") {
-      return getAllPropertiesMonthlyPlatformMatrix(bookings, platforms);
+      return getAllPropertiesMonthlyPlatformMatrix(scopedBookings, platforms);
     }
 
     return displayProperty
       ? getPropertyMonthlyPlatformMatrix(displayProperty.id, bookings, platforms)
       : null;
-  }, [bookings, displayProperty, platforms, selectedPropertyId]);
+  }, [bookings, displayProperty, platforms, scopedBookings, selectedPropertyId]);
 
   const activePropertyCategories = useMemo(() => {
     if (selectedPropertyId === "all") {
-      return getAllPropertiesMonthlyCategoryMatrix(expenses, expenseCategories);
+      return getAllPropertiesMonthlyCategoryMatrix(
+        scopedExpenses,
+        expenseCategories,
+      );
     }
 
     return displayProperty
@@ -273,7 +312,13 @@ export function MonthlyView({
           expenseCategories,
         )
       : null;
-  }, [displayProperty, expenseCategories, expenses, selectedPropertyId]);
+  }, [
+    displayProperty,
+    expenseCategories,
+    expenses,
+    scopedExpenses,
+    selectedPropertyId,
+  ]);
 
   return (
     <div className="space-y-6">
@@ -720,9 +765,9 @@ export function MonthlyView({
           <strong>Tutti</strong> vedi i totali aggregati di tutti gli appartamenti;
           seleziona un singolo appartamento per il dettaglio.
         </p>
-        {properties.length === 0 ? (
+        {visibleProperties.length === 0 ? (
           <p className="text-sm text-rc-muted">
-            Aggiungi almeno un appartamento dalla sezione Impostazioni.
+            Nessun appartamento per il filtro città selezionato.
           </p>
         ) : (
           <>
@@ -733,7 +778,7 @@ export function MonthlyView({
               >
                 Tutti
               </TabPill>
-              {properties.map((property) => (
+              {visibleProperties.map((property) => (
                 <TabPill
                   key={property.id}
                   active={selectedPropertyId === property.id}

@@ -4,9 +4,12 @@ import { useMemo, useState } from "react";
 import {
   formatCurrency,
   formatPercent,
+  filterByPropertyScope,
+  getAllPropertiesMonthlyCategoryMatrix,
+  getAllPropertiesMonthlyPlatformMatrix,
+  getPropertiesScopeSummary,
   getPropertyMonthlyCategoryMatrix,
   getPropertyMonthlyPlatformMatrix,
-  getPropertySummary,
   getScopedCategoryBreakdown,
   getScopedPlatformBreakdown,
 } from "@/lib/calculations";
@@ -44,8 +47,8 @@ export function PropertyView({
   const [selectedCity, setSelectedCity] = useState<PropertyCityId | "all">(
     "all",
   );
-  const [selectedPropertyId, setSelectedPropertyId] = useState(
-    properties[0]?.id ?? "",
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | "all">(
+    "all",
   );
 
   const visibleProperties = useMemo(
@@ -53,62 +56,118 @@ export function PropertyView({
     [properties, selectedCity],
   );
 
-  const activePropertyId =
-    visibleProperties.find((property) => property.id === selectedPropertyId)
-      ?.id ??
-    visibleProperties[0]?.id ??
-    "";
+  const scopedPropertyIds = useMemo(() => {
+    if (selectedPropertyId === "all") {
+      return visibleProperties.map((property) => property.id);
+    }
+
+    return visibleProperties.some((property) => property.id === selectedPropertyId)
+      ? [selectedPropertyId]
+      : visibleProperties.map((property) => property.id);
+  }, [selectedPropertyId, visibleProperties]);
+
+  const propertyScope = useMemo(
+    () =>
+      scopedPropertyIds.length === 1 ? scopedPropertyIds[0] : scopedPropertyIds,
+    [scopedPropertyIds],
+  );
+
+  const scopedBookings = useMemo(
+    () => filterByPropertyScope(bookings, propertyScope),
+    [bookings, propertyScope],
+  );
+
+  const scopedExpenses = useMemo(
+    () => filterByPropertyScope(expenses, propertyScope),
+    [expenses, propertyScope],
+  );
+
+  const scopeLabel = useMemo(() => {
+    if (selectedPropertyId !== "all") {
+      return (
+        visibleProperties.find((property) => property.id === selectedPropertyId)
+          ?.name ?? "Proprietà"
+      );
+    }
+
+    if (selectedCity === "all") {
+      return "Tutte le città";
+    }
+
+    return (
+      PROPERTY_CITIES.find((city) => city.id === selectedCity)?.label ??
+      selectedCity
+    );
+  }, [selectedCity, selectedPropertyId, visibleProperties]);
 
   const summary = useMemo(
     () =>
-      getPropertySummary(
-        activePropertyId,
+      getPropertiesScopeSummary(
+        scopedPropertyIds,
         bookings,
         expenses,
         properties,
         expenseCategories,
         platforms,
       ),
-    [activePropertyId, bookings, expenses, properties, expenseCategories, platforms],
+    [
+      scopedPropertyIds,
+      bookings,
+      expenses,
+      properties,
+      expenseCategories,
+      platforms,
+    ],
   );
 
   const annualPlatforms = useMemo(
     () =>
       getScopedPlatformBreakdown(
-        bookings,
+        scopedBookings,
         platforms,
         undefined,
-        activePropertyId,
+        propertyScope,
       ),
-    [activePropertyId, bookings, platforms],
+    [scopedBookings, platforms, propertyScope],
   );
 
   const annualCategories = useMemo(
     () =>
       getScopedCategoryBreakdown(
-        expenses,
+        scopedExpenses,
         expenseCategories,
         undefined,
-        activePropertyId,
+        propertyScope,
       ),
-    [activePropertyId, expenseCategories, expenses],
+    [scopedExpenses, expenseCategories, propertyScope],
   );
 
-  const platformMatrix = useMemo(
-    () =>
-      getPropertyMonthlyPlatformMatrix(activePropertyId, bookings, platforms),
-    [activePropertyId, bookings, platforms],
-  );
+  const platformMatrix = useMemo(() => {
+    if (scopedPropertyIds.length === 1) {
+      return getPropertyMonthlyPlatformMatrix(
+        scopedPropertyIds[0],
+        bookings,
+        platforms,
+      );
+    }
 
-  const categoryMatrix = useMemo(
-    () =>
-      getPropertyMonthlyCategoryMatrix(
-        activePropertyId,
+    return getAllPropertiesMonthlyPlatformMatrix(scopedBookings, platforms);
+  }, [scopedPropertyIds, bookings, platforms, scopedBookings]);
+
+  const categoryMatrix = useMemo(() => {
+    if (scopedPropertyIds.length === 1) {
+      return getPropertyMonthlyCategoryMatrix(
+        scopedPropertyIds[0],
         expenses,
         expenseCategories,
-      ),
-    [activePropertyId, expenseCategories, expenses],
-  );
+      );
+    }
+
+    return getAllPropertiesMonthlyCategoryMatrix(
+      scopedExpenses,
+      expenseCategories,
+    );
+  }, [scopedPropertyIds, expenses, expenseCategories, scopedExpenses]);
 
   if (properties.length === 0) {
     return (
@@ -126,7 +185,10 @@ export function PropertyView({
         <div className="mb-4 flex flex-wrap gap-2">
           <TabPill
             active={selectedCity === "all"}
-            onClick={() => setSelectedCity("all")}
+            onClick={() => {
+              setSelectedCity("all");
+              setSelectedPropertyId("all");
+            }}
           >
             Tutte le città
           </TabPill>
@@ -134,17 +196,26 @@ export function PropertyView({
             <TabPill
               key={city.id}
               active={selectedCity === city.id}
-              onClick={() => setSelectedCity(city.id)}
+              onClick={() => {
+                setSelectedCity(city.id);
+                setSelectedPropertyId("all");
+              }}
             >
               {city.label}
             </TabPill>
           ))}
         </div>
         <div className="flex flex-wrap gap-2">
+          <TabPill
+            active={selectedPropertyId === "all"}
+            onClick={() => setSelectedPropertyId("all")}
+          >
+            Tutti ({scopeLabel})
+          </TabPill>
           {visibleProperties.map((property) => (
             <TabPill
               key={property.id}
-              active={activePropertyId === property.id}
+              active={selectedPropertyId === property.id}
               onClick={() => setSelectedPropertyId(property.id)}
             >
               {property.name}
@@ -186,9 +257,13 @@ export function PropertyView({
           label="Tasso / Affitto"
           value={formatPercent(summary.rate)}
           hint={
-            summary.property
-              ? `Affitto ${formatCurrency(summary.property.monthlyRent)}/mese`
-              : undefined
+            selectedPropertyId === "all"
+              ? selectedCity === "all"
+                ? "Somma affitti mensili del portafoglio"
+                : `Affitti mensili — ${scopeLabel}`
+              : summary.property
+                ? `Affitto ${formatCurrency(summary.property.monthlyRent)}/mese`
+                : undefined
           }
           tone="neutral"
           progress={summary.rate}
@@ -198,7 +273,7 @@ export function PropertyView({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Card title={`${summary.property?.name ?? "Proprietà"} — incassi per OTA (anno)`}>
+        <Card title={`${scopeLabel} — incassi per OTA (anno)`}>
           <VoiceListTable
             title="OTA"
             description="Ricavi annuali suddivisi per tipo di prenotazione."
@@ -208,7 +283,7 @@ export function PropertyView({
           />
         </Card>
 
-        <Card title={`${summary.property?.name ?? "Proprietà"} — spese per voce (anno)`}>
+        <Card title={`${scopeLabel} — spese per voce (anno)`}>
           <VoiceListTable
             title="Voci"
             description="Costi annuali suddivisi per tutte le categorie di spesa."
@@ -265,7 +340,7 @@ export function PropertyView({
         </DataTable>
       </Card>
 
-      <Card title={`${summary.property?.name ?? "Proprietà"} — incassi per OTA mese per mese`}>
+      <Card title={`${scopeLabel} — incassi per OTA mese per mese`}>
         <MonthlyVoiceMatrix
           rowLabel="Mese"
           columns={platforms}
@@ -287,7 +362,7 @@ export function PropertyView({
         />
       </Card>
 
-      <Card title={`${summary.property?.name ?? "Proprietà"} — spese per voce mese per mese`}>
+      <Card title={`${scopeLabel} — spese per voce mese per mese`}>
         <MonthlyVoiceMatrix
           rowLabel="Mese"
           columns={expenseCategories}
