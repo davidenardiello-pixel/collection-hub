@@ -17,7 +17,11 @@ import {
   getIncomeChannelSummary,
   getPropertyBankAccount,
 } from "@/lib/bank-accounts";
-import { FISCAL_YEAR, MONTH_LABELS } from "@/lib/constants";
+import { FISCAL_YEAR, MONTH_LABELS, PROPERTY_CITIES } from "@/lib/constants";
+import {
+  getPropertyCityLabel,
+  normalizePropertyCity,
+} from "@/lib/property-cities";
 import {
   describeActiveFilters,
   EMPTY_FILTERS,
@@ -75,8 +79,8 @@ export function IncomeView({
   );
 
   const filteredBookings = useMemo(
-    () => filterBookings(bookings, filters),
-    [bookings, filters],
+    () => filterBookings(bookings, filters, properties),
+    [bookings, filters, properties],
   );
 
   const matrix = getPlatformMonthlyMatrix(filteredBookings, platforms);
@@ -97,6 +101,9 @@ export function IncomeView({
   const activeFilterLabels = describeActiveFilters(filters, {
     properties: propertyMap,
     platforms: platformMap,
+    cities: Object.fromEntries(
+      PROPERTY_CITIES.map((city) => [city.id, city.label]),
+    ),
   });
   const propertyMonthGroups = useMemo(
     () =>
@@ -215,6 +222,14 @@ export function IncomeView({
                     <h3 className="font-[family-name:var(--font-cormorant)] text-xl font-semibold text-rc-gold-light">
                       {propertyGroup.name}
                       <span className="ml-2 text-sm font-normal text-rc-muted">
+                        ·{" "}
+                        {getPropertyCityLabel(
+                          normalizePropertyCity(
+                            properties.find(
+                              (item) => item.id === propertyGroup.propertyId,
+                            )?.city,
+                          ),
+                        )}{" "}
                         ·{" "}
                         {getBankAccountLabel(
                           getPropertyBankAccount(

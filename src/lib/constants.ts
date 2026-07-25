@@ -1,4 +1,4 @@
-import type { ExpenseCategory, Platform, Property, BankAccountId } from "./types";
+import type { ExpenseCategory, Platform, Property, BankAccountId, PropertyCityId } from "./types";
 
 export const FISCAL_YEAR = 2026;
 export const FISCAL_YEAR_START = `${FISCAL_YEAR}-01-01`;
@@ -21,6 +21,13 @@ export const BANK_ACCOUNT_OPTIONS: { id: BankAccountId; label: string }[] = [
   { id: "dsep", label: "DSEP" },
   { id: "dd", label: "D&D" },
 ];
+
+export const PROPERTY_CITIES: { id: PropertyCityId; label: string }[] = [
+  { id: "roma", label: "Roma" },
+  { id: "napoli", label: "Napoli" },
+];
+
+export const DEFAULT_PROPERTY_CITY: PropertyCityId = "roma";
 
 export const DEFAULT_PROPERTIES: Property[] = [
   {

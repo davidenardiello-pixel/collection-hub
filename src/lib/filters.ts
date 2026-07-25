@@ -1,13 +1,16 @@
 import { FISCAL_YEAR, MONTH_LABELS } from "./constants";
 import { bookingAppliesToPeriod } from "./booking-allocation";
 import { getPeriodFromDate } from "./calculations";
-import type { Booking, Expense } from "./types";
+import { getPropertyCity } from "./property-cities";
+import type { Booking, Expense, Property, PropertyCityId } from "./types";
 
 export type FilterMonth = number | "all";
 export type FilterProperty = string | "all";
+export type FilterCity = PropertyCityId | "all";
 
 export interface TransactionFilters {
   month: FilterMonth;
+  city: FilterCity;
   propertyId: FilterProperty;
   categoryId: FilterProperty;
   platformId: FilterProperty;
@@ -16,6 +19,7 @@ export interface TransactionFilters {
 
 export const EMPTY_FILTERS: TransactionFilters = {
   month: "all",
+  city: "all",
   propertyId: "all",
   categoryId: "all",
   platformId: "all",
@@ -86,13 +90,33 @@ export function groupByPropertyAndMonth<T>(
     .sort((left, right) => left.name.localeCompare(right.name, "it"));
 }
 
+function matchesCityFilter(
+  propertyId: string,
+  filters: TransactionFilters,
+  properties: Property[],
+): boolean {
+  if (filters.city === "all") {
+    return true;
+  }
+
+  return getPropertyCity(propertyId, properties) === filters.city;
+}
+
 export function filterBookings(
   bookings: Booking[],
   filters: TransactionFilters,
+  properties: Property[] = [],
 ): Booking[] {
   const query = filters.search.trim().toLowerCase();
 
   return bookings.filter((booking) => {
+    if (
+      filters.city !== "all" &&
+      !matchesCityFilter(booking.propertyId, filters, properties)
+    ) {
+      return false;
+    }
+
     if (
       filters.propertyId !== "all" &&
       booking.propertyId !== filters.propertyId
@@ -134,10 +158,18 @@ export function filterBookings(
 export function filterExpenses(
   expenses: Expense[],
   filters: TransactionFilters,
+  properties: Property[] = [],
 ): Expense[] {
   const query = filters.search.trim().toLowerCase();
 
   return expenses.filter((expense) => {
+    if (
+      filters.city !== "all" &&
+      !matchesCityFilter(expense.propertyId, filters, properties)
+    ) {
+      return false;
+    }
+
     if (
       filters.propertyId !== "all" &&
       expense.propertyId !== filters.propertyId
@@ -201,12 +233,17 @@ export function describeActiveFilters(
     properties: Record<string, string>;
     categories?: Record<string, string>;
     platforms?: Record<string, string>;
+    cities?: Record<string, string>;
   },
 ): string[] {
   const parts: string[] = [];
 
   if (filters.month !== "all") {
     parts.push(MONTH_LABELS[filters.month - 1] ?? `Mese ${filters.month}`);
+  }
+
+  if (filters.city !== "all" && labels.cities) {
+    parts.push(labels.cities[filters.city] ?? filters.city);
   }
 
   if (filters.propertyId !== "all") {

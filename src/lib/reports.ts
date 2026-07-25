@@ -109,6 +109,7 @@ function applyReportFilter(
 ) {
   const filters = {
     month: filter.month,
+    city: "all" as const,
     propertyId: filter.propertyId,
     categoryId: "all" as const,
     platformId: "all" as const,
@@ -116,8 +117,8 @@ function applyReportFilter(
   };
 
   return {
-    bookings: filterBookings(bookings, filters),
-    expenses: filterExpenses(expenses, filters),
+    bookings: filterBookings(bookings, filters, properties),
+    expenses: filterExpenses(expenses, filters, properties),
     properties:
       filter.propertyId === "all"
         ? properties

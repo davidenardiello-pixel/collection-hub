@@ -1,11 +1,15 @@
 export type BankAccountId = "hsp" | "dsep" | "dd";
 
+export type PropertyCityId = "roma" | "napoli";
+
 export interface Property {
   id: string;
   name: string;
   monthlyRent: number;
   cleaningCostPerCheckIn: number;
   krossBookingMonthly: number;
+  /** Città / area operativa (es. Roma, Napoli). */
+  city?: PropertyCityId;
   /** Conto bancario di accredito (HSP, DSEP, D&D). */
   bankAccount?: BankAccountId;
   /** Commissione Airbnb imponibile (es. 0,155 = 15,5% o 0,03 = 3%). Default 15,5%. */

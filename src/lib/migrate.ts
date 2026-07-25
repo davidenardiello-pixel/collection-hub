@@ -23,8 +23,10 @@ import {
   DEFAULT_KROSSBOOKING_MONTHLY,
   DEFAULT_PLATFORMS,
   DEFAULT_PROPERTIES,
+  DEFAULT_PROPERTY_CITY,
 } from "./constants";
 import { normalizeBankAccount } from "./bank-accounts";
+import { normalizePropertyCity } from "./property-cities";
 import type {
   AutomationSettings,
   Booking,
@@ -79,6 +81,7 @@ function normalizeProperty(property: Property): Property {
     airbnbCommissionRate:
       property.airbnbCommissionRate ?? DEFAULT_AIRBNB_COMMISSION_RATE,
     bankAccount: normalizeBankAccount(property.bankAccount),
+    city: normalizePropertyCity(property.city),
   };
 }
 
@@ -105,6 +108,7 @@ function ensureProperties(
           cleaningCostPerCheckIn: DEFAULT_CLEANING_COSTS[propertyId] ?? 0,
           krossBookingMonthly: DEFAULT_KROSSBOOKING_MONTHLY,
           bankAccount: DEFAULT_BANK_ACCOUNT,
+          city: DEFAULT_PROPERTY_CITY,
         }),
       );
       knownIds.add(propertyId);

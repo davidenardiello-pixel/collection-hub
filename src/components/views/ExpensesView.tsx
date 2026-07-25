@@ -13,7 +13,7 @@ import { isAutomatedExpense } from "@/lib/automation";
 import { isLinkedCommissionExpense } from "@/lib/booking-commission";
 import { isLinkedVatExpense } from "@/lib/booking-vat";
 import { CHART_COLORS } from "@/lib/brand";
-import { FISCAL_YEAR, MONTH_LABELS } from "@/lib/constants";
+import { FISCAL_YEAR, MONTH_LABELS, PROPERTY_CITIES } from "@/lib/constants";
 import {
   describeActiveFilters,
   EMPTY_FILTERS,
@@ -67,8 +67,8 @@ export function ExpensesView({
   );
 
   const filteredExpenses = useMemo(
-    () => filterExpenses(expenses, filters),
-    [expenses, filters],
+    () => filterExpenses(expenses, filters, properties),
+    [expenses, filters, properties],
   );
 
   const matrix = getCategoryMonthlyMatrix(filteredExpenses, expenseCategories);
@@ -77,6 +77,9 @@ export function ExpensesView({
   const activeFilterLabels = describeActiveFilters(filters, {
     properties: propertyMap,
     categories: categoryMap,
+    cities: Object.fromEntries(
+      PROPERTY_CITIES.map((city) => [city.id, city.label]),
+    ),
   });
   const propertyMonthGroups = useMemo(
     () =>

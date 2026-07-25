@@ -23,7 +23,13 @@ import { CHART_COLORS } from "@/lib/brand";
 import {
   FISCAL_YEAR,
   OCCUPANCY_METRICS_START_MONTH,
+  PROPERTY_CITIES,
 } from "@/lib/constants";
+import {
+  filterPropertiesByCity,
+  getPropertyCity,
+  getPropertyCityLabel,
+} from "@/lib/property-cities";
 import {
   formatDateRangeItalian,
   getPropertyMonthOccupancy,
@@ -35,6 +41,7 @@ import type {
   ExpenseCategory,
   Platform,
   Property,
+  PropertyCityId,
 } from "@/lib/types";
 import { MonthlyTrendChart } from "../charts";
 import {
@@ -82,7 +89,15 @@ export function MonthlyView({
       : firstActiveMonth;
 
   const [selectedMonth, setSelectedMonth] = useState(initialMonth);
+  const [selectedCity, setSelectedCity] = useState<PropertyCityId | "all">(
+    "all",
+  );
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>("all");
+
+  const visibleProperties = useMemo(
+    () => filterPropertiesByCity(properties, selectedCity),
+    [properties, selectedCity],
+  );
 
   const detail = useMemo(
     () =>
@@ -112,14 +127,15 @@ export function MonthlyView({
         { year: FISCAL_YEAR, month: selectedMonth },
         bookings,
         expenses,
-        properties,
+        visibleProperties,
       ),
-    [bookings, expenses, properties, selectedMonth],
+    [bookings, expenses, visibleProperties, selectedMonth],
   );
 
   const propertiesMatrix = useMemo(
-    () => getPropertiesMonthlyMatrix(bookings, expenses, properties),
-    [bookings, expenses, properties],
+    () =>
+      getPropertiesMonthlyMatrix(bookings, expenses, visibleProperties),
+    [bookings, expenses, visibleProperties],
   );
 
   const aggregatedProperty = useMemo(
@@ -290,8 +306,32 @@ export function MonthlyView({
 
       <Card title={`Appartamento — ${detail.label}`}>
         <p className="mb-4 text-sm text-rc-muted">
-          Filtra ricavi e costi del mese per singolo appartamento o tutti insieme.
+          Filtra per città e appartamento. Gli appartamenti di Napoli e Roma
+          condividono la stessa dashboard ma puoi analizzarli separatamente.
         </p>
+        <div className="mb-4 flex flex-wrap gap-2">
+          <TabPill
+            active={selectedCity === "all"}
+            onClick={() => {
+              setSelectedCity("all");
+              setSelectedPropertyId("all");
+            }}
+          >
+            Tutte le città
+          </TabPill>
+          {PROPERTY_CITIES.map((city) => (
+            <TabPill
+              key={city.id}
+              active={selectedCity === city.id}
+              onClick={() => {
+                setSelectedCity(city.id);
+                setSelectedPropertyId("all");
+              }}
+            >
+              {city.label}
+            </TabPill>
+          ))}
+        </div>
         <div className="flex flex-wrap gap-2">
           <TabPill
             active={selectedPropertyId === "all"}
@@ -299,7 +339,7 @@ export function MonthlyView({
           >
             Tutti
           </TabPill>
-          {properties.map((property) => (
+          {visibleProperties.map((property) => (
             <TabPill
               key={property.id}
               active={selectedPropertyId === property.id}
@@ -515,7 +555,7 @@ export function MonthlyView({
               showOccupancyMetrics
                 ? [
                     "Appartamento",
-                    "Conto",
+                    "Città",
                     "Incassi",
                     "Spese",
                     "Profitto",
@@ -528,7 +568,7 @@ export function MonthlyView({
                   ]
                 : [
                     "Appartamento",
-                    "Conto",
+                    "Città",
                     "Incassi",
                     "Spese",
                     "Profitto",
@@ -557,8 +597,8 @@ export function MonthlyView({
                     </button>
                   </td>
                   <td className="px-2 py-2 text-sm text-rc-muted">
-                    {getBankAccountLabel(
-                      getPropertyBankAccount(property.id, properties),
+                    {getPropertyCityLabel(
+                      getPropertyCity(property.id, properties),
                     )}
                   </td>
                   <td className="px-2 py-2">

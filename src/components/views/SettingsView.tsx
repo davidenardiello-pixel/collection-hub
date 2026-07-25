@@ -6,11 +6,13 @@ import {
   BANK_ACCOUNT_OPTIONS,
   DEFAULT_AIRBNB_COMMISSION_RATE,
   DEFAULT_BANK_ACCOUNT,
+  DEFAULT_PROPERTY_CITY,
   FISCAL_YEAR,
   MAX_EXPENSE_CATEGORIES,
   MAX_PLATFORMS,
   MAX_PROPERTIES,
   MONTH_LABELS,
+  PROPERTY_CITIES,
 } from "@/lib/constants";
 import type {
   Booking,
@@ -20,6 +22,7 @@ import type {
   ExpenseCategory,
   Platform,
   Property,
+  PropertyCityId,
 } from "@/lib/types";
 import { downloadBackup } from "@/lib/backup";
 import type { PurgeScope, PurgePreview } from "@/lib/purge";
@@ -68,6 +71,7 @@ export function SettingsView({
     name: string,
     monthlyRent: number,
     bankAccount?: BankAccountId,
+    city?: PropertyCityId,
   ) => string | null;
   onUpdateProperty: (
     id: string,
@@ -75,6 +79,7 @@ export function SettingsView({
     monthlyRent: number,
     airbnbCommissionRate?: number,
     bankAccount?: BankAccountId,
+    city?: PropertyCityId,
   ) => string | null;
   onRemoveProperty: (id: string) => string | null;
   onAddPlatform: (name: string) => string | null;
@@ -118,6 +123,8 @@ export function SettingsView({
   const [newPropertyRent, setNewPropertyRent] = useState("");
   const [newPropertyBankAccount, setNewPropertyBankAccount] =
     useState<BankAccountId>(DEFAULT_BANK_ACCOUNT);
+  const [newPropertyCity, setNewPropertyCity] =
+    useState<PropertyCityId>(DEFAULT_PROPERTY_CITY);
   const [newPlatformName, setNewPlatformName] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
 
@@ -283,11 +290,13 @@ export function SettingsView({
                 newPropertyName,
                 Number(newPropertyRent || 0),
                 newPropertyBankAccount,
+                newPropertyCity,
               );
               if (!error) {
                 setNewPropertyName("");
                 setNewPropertyRent("");
                 setNewPropertyBankAccount(DEFAULT_BANK_ACCOUNT);
+                setNewPropertyCity(DEFAULT_PROPERTY_CITY);
               }
               showResult(error, "Appartamento aggiunto.");
             }}
@@ -324,6 +333,20 @@ export function SettingsView({
                 ))}
               </Select>
             </Field>
+            <Field label="Città">
+              <Select
+                value={newPropertyCity}
+                onChange={(event) =>
+                  setNewPropertyCity(event.target.value as PropertyCityId)
+                }
+              >
+                {PROPERTY_CITIES.map((city) => (
+                  <option key={city.id} value={city.id}>
+                    {city.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
             <Button type="submit">Aggiungi appartamento</Button>
           </form>
 
@@ -332,13 +355,20 @@ export function SettingsView({
               <PropertyRow
                 key={`${property.id}-${property.name}-${property.monthlyRent}`}
                 property={property}
-                onSave={(name, monthlyRent, airbnbCommissionRate, bankAccount) => {
+                onSave={(
+                  name,
+                  monthlyRent,
+                  airbnbCommissionRate,
+                  bankAccount,
+                  city,
+                ) => {
                   const error = onUpdateProperty(
                     property.id,
                     name,
                     monthlyRent,
                     airbnbCommissionRate,
                     bankAccount,
+                    city,
                   );
                   showResult(error, "Appartamento aggiornato.");
                 }}
@@ -468,6 +498,7 @@ function PropertyRow({
     monthlyRent: number,
     airbnbCommissionRate: number,
     bankAccount: BankAccountId,
+    city: PropertyCityId,
   ) => void;
   onRemove: () => void;
 }) {
@@ -475,6 +506,9 @@ function PropertyRow({
   const [monthlyRent, setMonthlyRent] = useState(String(property.monthlyRent));
   const [bankAccount, setBankAccount] = useState<BankAccountId>(
     property.bankAccount ?? DEFAULT_BANK_ACCOUNT,
+  );
+  const [city, setCity] = useState<PropertyCityId>(
+    property.city ?? DEFAULT_PROPERTY_CITY,
   );
   const [airbnbCommissionPercent, setAirbnbCommissionPercent] = useState(
     String(
@@ -516,6 +550,18 @@ function PropertyRow({
           ))}
         </Select>
       </Field>
+      <Field label="Città">
+        <Select
+          value={city}
+          onChange={(event) => setCity(event.target.value as PropertyCityId)}
+        >
+          {PROPERTY_CITIES.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+      </Field>
       <div className="flex gap-2">
         <Button
           variant="secondary"
@@ -525,6 +571,7 @@ function PropertyRow({
               Number(monthlyRent || 0),
               Number(airbnbCommissionPercent || 0) / 100,
               bankAccount,
+              city,
             )
           }
         >
@@ -538,7 +585,9 @@ function PropertyRow({
         Affitto: {formatCurrency(Number(monthlyRent || 0))} / mese · Conto{" "}
         {BANK_ACCOUNT_OPTIONS.find((option) => option.id === bankAccount)?.label ??
           bankAccount}{" "}
-        · Airbnb {airbnbCommissionPercent}% + IVA 22%
+        ·{" "}
+        {PROPERTY_CITIES.find((option) => option.id === city)?.label ?? city} ·
+        Airbnb {airbnbCommissionPercent}% + IVA 22%
       </p>
     </div>
   );
