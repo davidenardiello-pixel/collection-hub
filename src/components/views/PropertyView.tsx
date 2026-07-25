@@ -11,12 +11,15 @@ import {
   getScopedPlatformBreakdown,
 } from "@/lib/calculations";
 import { CHART_COLORS } from "@/lib/brand";
+import { PROPERTY_CITIES } from "@/lib/constants";
+import { filterPropertiesByCity } from "@/lib/property-cities";
 import type {
   Booking,
   Expense,
   ExpenseCategory,
   Platform,
   Property,
+  PropertyCityId,
 } from "@/lib/types";
 import { MonthlyTrendChart, RingGauge } from "../charts";
 import {
@@ -38,13 +41,22 @@ export function PropertyView({
   expenseCategories: ExpenseCategory[];
   platforms: Platform[];
 }) {
+  const [selectedCity, setSelectedCity] = useState<PropertyCityId | "all">(
+    "all",
+  );
   const [selectedPropertyId, setSelectedPropertyId] = useState(
     properties[0]?.id ?? "",
   );
 
+  const visibleProperties = useMemo(
+    () => filterPropertiesByCity(properties, selectedCity),
+    [properties, selectedCity],
+  );
+
   const activePropertyId =
-    properties.find((property) => property.id === selectedPropertyId)?.id ??
-    properties[0]?.id ??
+    visibleProperties.find((property) => property.id === selectedPropertyId)
+      ?.id ??
+    visibleProperties[0]?.id ??
     "";
 
   const summary = useMemo(
@@ -111,8 +123,25 @@ export function PropertyView({
   return (
     <div className="space-y-6">
       <Card title="Seleziona proprietà">
+        <div className="mb-4 flex flex-wrap gap-2">
+          <TabPill
+            active={selectedCity === "all"}
+            onClick={() => setSelectedCity("all")}
+          >
+            Tutte le città
+          </TabPill>
+          {PROPERTY_CITIES.map((city) => (
+            <TabPill
+              key={city.id}
+              active={selectedCity === city.id}
+              onClick={() => setSelectedCity(city.id)}
+            >
+              {city.label}
+            </TabPill>
+          ))}
+        </div>
         <div className="flex flex-wrap gap-2">
-          {properties.map((property) => (
+          {visibleProperties.map((property) => (
             <TabPill
               key={property.id}
               active={activePropertyId === property.id}

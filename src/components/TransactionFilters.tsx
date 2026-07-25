@@ -1,10 +1,14 @@
 "use client";
 
-import { MONTH_LABELS } from "@/lib/constants";
+import { MONTH_LABELS, PROPERTY_CITIES } from "@/lib/constants";
 import {
   EMPTY_FILTERS,
   type TransactionFilters as Filters,
 } from "@/lib/filters";
+import {
+  filterPropertiesByCity,
+  groupPropertiesByCity,
+} from "@/lib/property-cities";
 import type { ExpenseCategory, Platform, Property } from "@/lib/types";
 import { Button, Field, Input, Select } from "./ui";
 
@@ -21,8 +25,38 @@ export function TransactionFilters({
   expenseCategories?: ExpenseCategory[];
   platforms?: Platform[];
 }) {
+  const visibleProperties = filterPropertiesByCity(properties, filters.city);
+  const groupedProperties = groupPropertiesByCity(visibleProperties);
+
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
+      <Field label="Città">
+        <Select
+          value={filters.city}
+          onChange={(event) => {
+            const city = event.target.value as Filters["city"];
+            onChange({
+              ...filters,
+              city,
+              propertyId:
+                filters.propertyId !== "all" &&
+                !filterPropertiesByCity(properties, city).some(
+                  (property) => property.id === filters.propertyId,
+                )
+                  ? "all"
+                  : filters.propertyId,
+            });
+          }}
+        >
+          <option value="all">Tutte le città</option>
+          {PROPERTY_CITIES.map((city) => (
+            <option key={city.id} value={city.id}>
+              {city.label}
+            </option>
+          ))}
+        </Select>
+      </Field>
+
       <Field label="Appartamento">
         <Select
           value={filters.propertyId}
@@ -31,11 +65,21 @@ export function TransactionFilters({
           }
         >
           <option value="all">Tutti gli appartamenti</option>
-          {properties.map((property) => (
-            <option key={property.id} value={property.id}>
-              {property.name}
-            </option>
-          ))}
+          {filters.city === "all"
+            ? groupedProperties.map((group) => (
+                <optgroup key={group.id} label={group.label}>
+                  {group.properties.map((property) => (
+                    <option key={property.id} value={property.id}>
+                      {property.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))
+            : visibleProperties.map((property) => (
+                <option key={property.id} value={property.id}>
+                  {property.name}
+                </option>
+              ))}
         </Select>
       </Field>
 

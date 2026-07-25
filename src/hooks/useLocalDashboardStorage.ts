@@ -16,12 +16,13 @@ import { parseBackup } from "@/lib/backup";
 import {
   DEFAULT_BANK_ACCOUNT,
   DEFAULT_KROSSBOOKING_MONTHLY,
+  DEFAULT_PROPERTY_CITY,
   MAX_EXPENSE_CATEGORIES,
   MAX_PLATFORMS,
   MAX_PROPERTIES,
   STORAGE_KEY,
 } from "@/lib/constants";
-import type { BankAccountId } from "@/lib/types";
+import type { BankAccountId, PropertyCityId } from "@/lib/types";
 import { createUniqueId, normalizeDashboardData } from "@/lib/migrate";
 import { removePropertyFromDashboard } from "@/lib/property-removal";
 import {
@@ -321,6 +322,7 @@ export function useLocalDashboardStorage() {
       name: string,
       monthlyRent: number,
       bankAccount: BankAccountId = DEFAULT_BANK_ACCOUNT,
+      city: PropertyCityId = DEFAULT_PROPERTY_CITY,
     ): string | null => {
       const trimmed = name.trim();
       if (!trimmed) {
@@ -351,6 +353,7 @@ export function useLocalDashboardStorage() {
               cleaningCostPerCheckIn: 0,
               krossBookingMonthly: DEFAULT_KROSSBOOKING_MONTHLY,
               bankAccount,
+              city,
             },
           ],
         };
@@ -368,6 +371,7 @@ export function useLocalDashboardStorage() {
       monthlyRent: number,
       airbnbCommissionRate?: number,
       bankAccount?: BankAccountId,
+      city?: PropertyCityId,
     ): string | null => {
       const trimmed = name.trim();
       if (!trimmed) {
@@ -392,6 +396,7 @@ export function useLocalDashboardStorage() {
                 monthlyRent,
                 ...(rate != null ? { airbnbCommissionRate: rate } : {}),
                 ...(bankAccount != null ? { bankAccount } : {}),
+                ...(city != null ? { city } : {}),
               }
             : property,
         ),

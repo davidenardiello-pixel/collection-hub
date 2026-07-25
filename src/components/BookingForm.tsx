@@ -12,6 +12,7 @@ import {
   isVatExemptPlatform,
 } from "@/lib/booking-vat";
 import type { Booking, Platform, Property } from "@/lib/types";
+import { groupPropertiesByCity, formatPropertyOptionLabel } from "@/lib/property-cities";
 import { Button, Card, Field, Input, Select } from "./ui";
 
 export function BookingForm({
@@ -206,10 +207,14 @@ export function BookingForm({
             value={propertyId || properties[0].id}
             onChange={(event) => setPropertyId(event.target.value)}
           >
-            {properties.map((property) => (
-              <option key={property.id} value={property.id}>
-                {property.name}
-              </option>
+            {groupPropertiesByCity(properties).map((group) => (
+              <optgroup key={group.id} label={group.label}>
+                {group.properties.map((property) => (
+                  <option key={property.id} value={property.id}>
+                    {formatPropertyOptionLabel(property)}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </Select>
         </Field>

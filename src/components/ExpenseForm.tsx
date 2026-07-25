@@ -4,6 +4,7 @@ import { useState } from "react";
 import { isLinkedCommissionExpense } from "@/lib/booking-commission";
 import { isLinkedVatExpense } from "@/lib/booking-vat";
 import type { Expense, ExpenseCategory, Property } from "@/lib/types";
+import { formatPropertyOptionLabel, groupPropertiesByCity } from "@/lib/property-cities";
 import { Button, Card, Field, Input, Select } from "./ui";
 
 export function ExpenseForm({
@@ -107,10 +108,14 @@ export function ExpenseForm({
             value={propertyId || properties[0].id}
             onChange={(event) => setPropertyId(event.target.value)}
           >
-            {properties.map((property) => (
-              <option key={property.id} value={property.id}>
-                {property.name}
-              </option>
+            {groupPropertiesByCity(properties).map((group) => (
+              <optgroup key={group.id} label={group.label}>
+                {group.properties.map((property) => (
+                  <option key={property.id} value={property.id}>
+                    {formatPropertyOptionLabel(property)}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </Select>
         </Field>
