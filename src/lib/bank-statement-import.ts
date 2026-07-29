@@ -8,7 +8,12 @@ export interface ParsedBankStatementLine {
   counterparty: string;
   reference: string;
   otaChannel: OtaBankChannel;
+  /** Numero prenotazione Booking (se già noto dal testo banca). */
   externalBookingId?: string;
+  /** Riferimento batch in bonifico Booking: NO.{ref} in estratto conto. */
+  bookingPayoutBatchRef?: string;
+  /** ID struttura Booking in bonifico: ID.{numero} (non è il numero prenotazione). */
+  bookingListingId?: string;
   fingerprint: string;
 }
 
@@ -18,13 +23,25 @@ export interface BankStatementParseResult {
   skippedRows: number;
 }
 
-export function extractBookingExternalId(text: string): string | undefined {
+/** ID struttura/listing su Booking.com (segmento ID.xxx nel bonifico). */
+export function extractBookingListingId(text: string): string | undefined {
   const dotted = text.match(/ID\.(\d+)/i);
   if (dotted?.[1]) {
     return dotted[1];
   }
   const spaced = text.match(/\bID[:\s]+(\d{6,})\b/i);
   return spaced?.[1];
+}
+
+/** Batch pagamento Booking (segmento NO.xxx nel bonifico Finom/BPER). */
+export function extractBookingPayoutBatchRef(text: string): string | undefined {
+  const match = text.match(/NO\.([^/\s]+)/i);
+  return match?.[1]?.trim();
+}
+
+/** @deprecated Usa extractBookingListingId; non confondere con numero prenotazione. */
+export function extractBookingExternalId(text: string): string | undefined {
+  return extractBookingListingId(text);
 }
 
 function parseItalianAmount(value: string): number {
@@ -229,7 +246,8 @@ function parseFinomCsv(
       continue;
     }
 
-    const externalBookingId = extractBookingExternalId(combined);
+    const bookingPayoutBatchRef = extractBookingPayoutBatchRef(combined);
+    const bookingListingId = extractBookingListingId(combined);
     const roundedAmount = Math.round(amount * 100) / 100;
 
     lines.push({
@@ -238,7 +256,8 @@ function parseFinomCsv(
       counterparty,
       reference,
       otaChannel,
-      externalBookingId,
+      bookingPayoutBatchRef,
+      bookingListingId,
       fingerprint: buildFingerprint([
         context.bankInstitution,
         context.bankAccountId,
@@ -343,7 +362,8 @@ function parseBperCsv(
     }
 
     const otaChannel = detectOtaChannel(description);
-    const externalBookingId = extractBookingExternalId(description);
+    const bookingPayoutBatchRef = extractBookingPayoutBatchRef(description);
+    const bookingListingId = extractBookingListingId(description);
     const roundedAmount = Math.round(amount * 100) / 100;
 
     lines.push({
@@ -352,7 +372,8 @@ function parseBperCsv(
       counterparty: description.slice(0, 80),
       reference: description,
       otaChannel,
-      externalBookingId,
+      bookingPayoutBatchRef,
+      bookingListingId,
       fingerprint: buildFingerprint([
         context.bankInstitution,
         context.bankAccountId,

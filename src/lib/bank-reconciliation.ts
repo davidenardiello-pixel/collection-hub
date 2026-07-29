@@ -8,6 +8,11 @@ import {
 } from "./ota-payout";
 import type { ParsedBankStatementLine } from "./bank-statement-import";
 import {
+  batchNetTotal,
+  reservationIdsForBatch,
+  type BookingAccountingIndex,
+} from "./booking-com-accounting";
+import {
   listPlatformBatches,
   roundPayoutMoney,
 } from "./payout-batch-alloc";
@@ -204,6 +209,65 @@ function tryMatchCatchUpPayment(
   };
 }
 
+function findBookingsByReservationIds(
+  bookings: Booking[],
+  reservationIds: string[],
+): Booking[] {
+  return bookings.filter((booking) => {
+    if (!booking.externalId) {
+      return false;
+    }
+    return reservationIds.some((id) => bookingMatchesExternalId(booking, id));
+  });
+}
+
+function tryMatchViaBookingAccounting(
+  line: ParsedBankStatementLine,
+  bookings: Booking[],
+  accounting?: BookingAccountingIndex,
+): BankLineMatchResult | null {
+  if (!accounting || !line.bookingPayoutBatchRef || line.otaChannel !== "booking") {
+    return null;
+  }
+  const batchRef = line.bookingPayoutBatchRef;
+  const reservationIds = reservationIdsForBatch(accounting, batchRef);
+  if (reservationIds.length === 0) {
+    return null;
+  }
+  const expectedNet = batchNetTotal(accounting, batchRef);
+  const amountDiff = Math.abs(expectedNet - line.amount);
+  const tolerance = Math.max(
+    AMOUNT_TOLERANCE * Math.max(1, reservationIds.length),
+    line.amount * 0.002,
+    1,
+  );
+  if (amountDiff > tolerance) {
+    return null;
+  }
+
+  const matched = findBookingsByReservationIds(bookings, reservationIds).filter(
+    (booking) => getOtaPayoutPlatform(booking.platformId) === "booking",
+  );
+  if (matched.length === 0) {
+    return {
+      matchReason: `Batch Booking ${batchRef} in contabilità (${reservationIds.join(", ")}) — prenotazioni non in dashboard`,
+    };
+  }
+
+  const primary = matched[0];
+  const payout = applyExpectedPayoutFields(primary);
+  const label =
+    matched.length === 1
+      ? `Prenotazione ${primary.externalId}`
+      : `${matched.length} prenotazioni (${reservationIds.join(", ")})`;
+
+  return {
+    matchedBookingId: matched.length === 1 ? primary.id : undefined,
+    expectedPayoutBatch: payout.expectedPayoutBatch,
+    matchReason: `Contabilità Booking · ${label} · batch ${batchRef}`,
+  };
+}
+
 function bookingMatchesExternalId(
   booking: Booking,
   externalId: string,
@@ -222,7 +286,13 @@ export function matchBankLineToBooking(
   bookings: Booking[],
   properties: Property[],
   bankAccountId: BankAccountId,
+  accounting?: BookingAccountingIndex,
 ): BankLineMatchResult {
+  const accountingMatch = tryMatchViaBookingAccounting(line, bookings, accounting);
+  if (accountingMatch) {
+    return accountingMatch;
+  }
+
   if (line.externalBookingId) {
     const byExternalGlobal = bookings.find((booking) =>
       bookingMatchesExternalId(booking, line.externalBookingId!),
@@ -327,6 +397,7 @@ export function convertParsedLinesToPayouts(
   properties: Property[],
   bankAccountId: BankAccountId,
   bankInstitution: BankInstitutionId,
+  accounting?: BookingAccountingIndex,
 ) {
   return lines.map((line) => {
     const match = matchBankLineToBooking(
@@ -334,6 +405,7 @@ export function convertParsedLinesToPayouts(
       bookings,
       properties,
       bankAccountId,
+      accounting,
     );
 
     return {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   formatCurrency,
   formatDate,
@@ -21,8 +21,16 @@ import {
   sumBankDepositsByOtaChannel,
 } from "@/lib/payout-dashboard";
 import { convertParsedLinesToPayouts } from "@/lib/bank-reconciliation";
+import {
+  emptyBookingAccountingIndex,
+  filterAccountingIndexToKnownReservations,
+  mergeBookingAccountingIndexes,
+  parseBookingAccountingCsv,
+  type BookingAccountingIndex,
+} from "@/lib/booking-com-accounting";
 import { buildAccountCompetenceVsPayoutBridge } from "@/lib/income-payout-bridge";
 import { parseBankStatementCsv } from "@/lib/bank-statement-import";
+import type { ParsedBankStatementLine } from "@/lib/bank-statement-import";
 import {
   getBankInstitutionLabel,
   getInstitutionsForAccount,
@@ -93,11 +101,95 @@ export function PayoutsView({
   const [importPreview, setImportPreview] = useState<
     Omit<BankPayoutReceived, "id">[] | null
   >(null);
+  const [accountingIndex, setAccountingIndex] = useState<BookingAccountingIndex>(
+    () => emptyBookingAccountingIndex(),
+  );
+  const [accountingFileLabel, setAccountingFileLabel] = useState<string | null>(
+    null,
+  );
+  const [pendingBankLines, setPendingBankLines] = useState<
+    ParsedBankStatementLine[] | null
+  >(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
+
+  function rebuildBankImportPreview(lines: ParsedBankStatementLine[]) {
+    const rows = convertParsedLinesToPayouts(
+      lines,
+      bookings,
+      properties,
+      importAccountId,
+      importInstitution,
+      filteredAccountingIndex,
+    );
+    setImportPreview(rows);
+    const bookingTotal = rows
+      .filter((row) => row.otaChannel === "booking")
+      .reduce((sum, row) => sum + row.amount, 0);
+    const airbnbTotal = rows
+      .filter((row) => row.otaChannel === "airbnb")
+      .reduce((sum, row) => sum + row.amount, 0);
+    const bookingLinked = rows.filter(
+      (row) =>
+        row.otaChannel === "booking" &&
+        (row.matchReason?.startsWith("Contabilità Booking") ||
+          row.matchReason?.startsWith("ID Booking") ||
+          row.matchReason?.startsWith("ID prenotazione")),
+    ).length;
+    const bookingRows = rows.filter((row) => row.otaChannel === "booking").length;
+    const accountingBatches = filteredAccountingIndex.byBatchRef.size;
+    setImportStatus(
+      `Trovati ${rows.length} accrediti OTA. ` +
+        `Booking ${formatCurrency(bookingTotal)} · Airbnb ${formatCurrency(airbnbTotal)}. ` +
+        `Booking collegati (contabilità o ID): ${bookingLinked}/${bookingRows}. ` +
+        (accountingBatches > 0
+          ? `Batch contabilità (solo prenotazioni in dashboard): ${accountingBatches}. `
+          : "Carica anche il CSV contabilità Booking (statements o payout) per collegare i batch NO.xxx. ") +
+        (accountingFileLabel ? `File contabilità: ${accountingFileLabel}. ` : ""),
+    );
+  }
+
+  const bookingReservationIds = useMemo(() => {
+    const bookingPlatformIds = new Set(
+      platforms
+        .filter((platform) => platform.id.toLowerCase().includes("booking"))
+        .map((platform) => platform.id),
+    );
+    return new Set(
+      bookings
+        .filter(
+          (booking) =>
+            booking.externalId &&
+            (bookingPlatformIds.has(booking.platformId) ||
+              booking.platformId.toLowerCase().includes("booking")),
+        )
+        .map((booking) => booking.externalId!.trim()),
+    );
+  }, [bookings, platforms]);
+  const filteredAccountingIndex = useMemo(
+    () =>
+      filterAccountingIndexToKnownReservations(
+        accountingIndex,
+        bookingReservationIds,
+      ),
+    [accountingIndex, bookingReservationIds],
+  );
   const institutionOptions = useMemo(
     () => getInstitutionsForAccount(importAccountId),
     [importAccountId],
   );
+
+  useEffect(() => {
+    if (pendingBankLines) {
+      rebuildBankImportPreview(pendingBankLines);
+    }
+  }, [
+    pendingBankLines,
+    filteredAccountingIndex,
+    importAccountId,
+    importInstitution,
+    bookings,
+    properties,
+  ]);
 
   const propertyMap = Object.fromEntries(
     properties.map((property) => [property.id, property.name]),
@@ -875,8 +967,11 @@ export function PayoutsView({
           è già calcolato sopra dalle prenotazioni. Scegli{" "}
           <strong className="text-rc-ink">azienda</strong> (HSP / DSEP / D&D) e{" "}
           <strong className="text-rc-ink">banca del file</strong> (DSEP: Finom o BPER;
-          HSP: BPER; D&D: Finom). Dopo l&apos;import il sistema abbina le righe alle
-          prenotazioni (ID Booking o importo/data).
+          HSP: BPER; D&D: Finom). Per Booking.com carica anche il CSV contabilità
+          (estratti pagamenti per DSEP o export payout globale): il bonifico usa{" "}
+          <code className="text-xs">NO.batch/ID.struttura</code>, non il numero
+          prenotazione. Il doppio filtro tiene solo le righe contabili le cui
+          prenotazioni sono già in dashboard, poi le abbina all&apos;estratto.
         </p>
 
         <div className="mb-4 flex flex-wrap gap-2">
@@ -901,6 +996,43 @@ export function PayoutsView({
           </Button>
         </div>
 
+        <div className="mb-6 grid gap-3 md:grid-cols-2">
+          <label className="flex flex-col justify-end text-sm md:col-span-2">
+            <span className="text-rc-muted">
+              CSV contabilità Booking (statements o payout) — opzionale, uno o più file
+            </span>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              multiple
+              className="mt-1 w-full text-sm text-rc-muted file:mr-3 file:rounded-lg file:border-0 file:bg-rc-gold/20 file:px-3 file:py-2 file:text-rc-ink"
+              onChange={(event) => {
+                const files = event.target.files;
+                event.target.value = "";
+                if (!files || files.length === 0) {
+                  return;
+                }
+                void Promise.all([...files].map((file) => file.text())).then(
+                  (texts) => {
+                    const indexes = texts.map((text) =>
+                      parseBookingAccountingCsv(text),
+                    );
+                    const merged = mergeBookingAccountingIndexes(...indexes);
+                    setAccountingIndex(merged);
+                    const names = [...files].map((file) => file.name).join(", ");
+                    setAccountingFileLabel(names);
+                    const reservations = merged.byReservationId.size;
+                    setImportStatus(
+                      `Contabilità Booking caricata (${names}): ${reservations} numeri prenotazione nel file. ` +
+                        `Dopo l'estratto conto, il match usa il batch NO.xxx.`,
+                    );
+                  },
+                );
+              }}
+            />
+          </label>
+        </div>
+
         <div className="mb-6 grid gap-3 md:grid-cols-3">
           <label className="text-sm">
             <span className="text-rc-muted">Conto dashboard</span>
@@ -913,6 +1045,7 @@ export function PayoutsView({
                 setImportAccountId(bankAccountId);
                 setImportInstitution(allowed[0] ?? "finom");
                 setImportPreview(null);
+                setPendingBankLines(null);
                 setImportStatus(null);
               }}
             >
@@ -931,6 +1064,7 @@ export function PayoutsView({
               onChange={(event) => {
                 setImportInstitution(event.target.value as BankInstitutionId);
                 setImportPreview(null);
+                setPendingBankLines(null);
                 setImportStatus(null);
               }}
             >
@@ -960,6 +1094,7 @@ export function PayoutsView({
                   });
                   if (parsed.lines.length === 0) {
                     setImportPreview(null);
+                    setPendingBankLines(null);
                     const detail =
                       parsed.format === "unknown"
                         ? "Formato non riconosciuto: usa CSV Finom (virgola) o movimenti BPER (punto e virgola, colonne Contabile/Descrizione/Importo)."
@@ -969,30 +1104,11 @@ export function PayoutsView({
                     setImportStatus(detail);
                     return;
                   }
-                  const rows = convertParsedLinesToPayouts(
-                    parsed.lines,
-                    bookings,
-                    properties,
-                    importAccountId,
-                    importInstitution,
-                  );
-                  setImportPreview(rows);
-                  const bookingTotal = rows
-                    .filter((row) => row.otaChannel === "booking")
-                    .reduce((sum, row) => sum + row.amount, 0);
-                  const airbnbTotal = rows
-                    .filter((row) => row.otaChannel === "airbnb")
-                    .reduce((sum, row) => sum + row.amount, 0);
-                  const bookingIdMatches = rows.filter(
-                    (row) =>
-                      row.otaChannel === "booking" &&
-                      row.matchReason?.startsWith("ID Booking"),
-                  ).length;
+                  setPendingBankLines(parsed.lines);
+                  rebuildBankImportPreview(parsed.lines);
                   setImportStatus(
-                    `Trovati ${rows.length} accrediti OTA (${parsed.format.toUpperCase()}). ` +
-                      `Booking ${formatCurrency(bookingTotal)} · Airbnb ${formatCurrency(airbnbTotal)}. ` +
-                      `Booking con ID prenotazione collegato: ${bookingIdMatches}/${rows.filter((r) => r.otaChannel === "booking").length}. ` +
-                      `Righe ignorate nel file: ${parsed.skippedRows}.`,
+                    (prev) =>
+                      `Estratto ${parsed.format.toUpperCase()}: ${parsed.lines.length} accrediti OTA. Righe ignorate: ${parsed.skippedRows}. ${prev ?? ""}`,
                   );
                 });
               }}
