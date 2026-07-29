@@ -5,7 +5,8 @@ import {
   isCashPlatform,
 } from "./bank-accounts";
 import { getBookingTotal } from "./calculations";
-import type { BankAccountId, Booking, Property } from "./types";
+import { getReceivedTotalForBatch } from "./payout-batch-alloc";
+import type { BankAccountId, BankPayoutReceived, Booking, Property } from "./types";
 
 export type OtaPayoutPlatform = "booking" | "airbnb" | "vrbo";
 
@@ -172,7 +173,7 @@ export function buildPayoutReconciliation(
   bookings: Booking[],
   properties: Property[],
   platforms: { id: string; name: string }[],
-  bankPayouts: { expectedPayoutBatch?: string; amount: number }[],
+  bankPayouts: BankPayoutReceived[],
   filter?: { year: number; month: number },
 ): PayoutReconciliationSummary {
   const platformNames = Object.fromEntries(
@@ -203,17 +204,6 @@ export function buildPayoutReconciliation(
     batchMap.set(batchId, list);
   }
 
-  const receivedByBatch = new Map<string, number>();
-  for (const payout of bankPayouts) {
-    if (!payout.expectedPayoutBatch) {
-      continue;
-    }
-    receivedByBatch.set(
-      payout.expectedPayoutBatch,
-      (receivedByBatch.get(payout.expectedPayoutBatch) ?? 0) + payout.amount,
-    );
-  }
-
   const batches: PayoutBatchRow[] = Array.from(batchMap.entries())
     .map(([batchId, batchBookings]) => {
       const first = batchBookings[0];
@@ -231,10 +221,6 @@ export function buildPayoutReconciliation(
         (total, booking) => total + getBookingNetBankDeposit(booking),
         0,
       );
-      const receivedTotal = Math.round(
-        (receivedByBatch.get(batchId) ?? 0) * 100,
-      ) / 100;
-      const difference = Math.round((receivedTotal - netExpected) * 100) / 100;
       const accountIds = [
         ...new Set(
           batchBookings.map((booking) =>
@@ -242,6 +228,21 @@ export function buildPayoutReconciliation(
           ),
         ),
       ];
+      const receivedTotal = Math.round(
+        accountIds.reduce(
+          (sum, accountId) =>
+            sum +
+            getReceivedTotalForBatch(
+              batchId,
+              bankPayouts,
+              relevant,
+              properties,
+              accountId,
+            ),
+          0,
+        ) * 100,
+      ) / 100;
+      const difference = Math.round((receivedTotal - netExpected) * 100) / 100;
 
       let status: PayoutBatchStatus = "pending";
       if (receivedTotal === 0) {
@@ -285,10 +286,16 @@ export function buildPayoutReconciliation(
   const matchedBatchIds = new Set(batchMap.keys());
   let unmatchedReceivedTotal = 0;
   for (const payout of bankPayouts) {
-    if (
-      payout.expectedPayoutBatch &&
-      !matchedBatchIds.has(payout.expectedPayoutBatch)
-    ) {
+    const covered =
+      payout.coveredPayoutBatches && payout.coveredPayoutBatches.length > 0
+        ? payout.coveredPayoutBatches
+        : payout.expectedPayoutBatch
+          ? [payout.expectedPayoutBatch]
+          : [];
+    const anyMatched = covered.some((batchId) =>
+      matchedBatchIds.has(batchId),
+    );
+    if (!anyMatched && covered.length > 0) {
       unmatchedReceivedTotal += payout.amount;
     }
   }

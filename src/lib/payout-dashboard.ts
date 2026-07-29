@@ -1,5 +1,6 @@
 import { BANK_ACCOUNT_OPTIONS } from "./constants";
 import { getBankAccountLabel, getPropertyBankAccount } from "./bank-accounts";
+import { getReceivedTotalForBatch } from "./payout-batch-alloc";
 import {
   applyExpectedPayoutFields,
   getBookingGrossTotal,
@@ -143,10 +144,15 @@ export function getBookingReceivedFromBank(
   const batchPayouts = bankPayouts.filter(
     (payout) =>
       payout.bankAccountId === bankAccountId &&
-      payout.expectedPayoutBatch === batchId,
+      (payout.expectedPayoutBatch === batchId ||
+        payout.coveredPayoutBatches?.includes(batchId)),
   );
-  const receivedBatchTotal = roundMoney(
-    batchPayouts.reduce((total, payout) => total + payout.amount, 0),
+  const receivedBatchTotal = getReceivedTotalForBatch(
+    batchId,
+    bankPayouts,
+    allBookings,
+    properties,
+    bankAccountId,
   );
   const receivedDate = batchPayouts
     .map((payout) => payout.receivedDate)

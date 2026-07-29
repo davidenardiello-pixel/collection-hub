@@ -102,6 +102,7 @@ export interface BankPayoutReceived {
   reference?: string;
   counterparty?: string;
   expectedPayoutBatch?: string;
+  coveredPayoutBatches?: string[];
   matchedBookingId?: string;
   matchReason?: string;
   otaChannel?: "airbnb" | "booking" | "vrbo" | "unknown";

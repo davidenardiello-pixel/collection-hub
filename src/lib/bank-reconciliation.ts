@@ -7,6 +7,10 @@ import {
   parseIsoDate,
 } from "./ota-payout";
 import type { ParsedBankStatementLine } from "./bank-statement-import";
+import {
+  listPlatformBatches,
+  roundPayoutMoney,
+} from "./payout-batch-alloc";
 import type {
   BankAccountId,
   BankInstitutionId,
@@ -15,11 +19,15 @@ import type {
 } from "./types";
 
 const AMOUNT_TOLERANCE = 0.06;
+/** Giorni indietro per bonifici di recupero (conto aperto in ritardo). */
+const CATCH_UP_LOOKBACK_DAYS = 150;
+const CATCH_UP_FORWARD_DAYS = 21;
 
 export interface BankLineMatchResult {
   matchedBookingId?: string;
   expectedPayoutBatch?: string;
   matchReason?: string;
+  coveredPayoutBatches?: string[];
 }
 
 function bookingsForBankAccount(
@@ -115,6 +123,87 @@ function tryMatchAggregatedBatch(
   };
 }
 
+function catchUpTolerance(batchCount: number, amount: number): number {
+  return Math.max(
+    AMOUNT_TOLERANCE * Math.max(1, batchCount),
+    amount * 0.002,
+    1,
+  );
+}
+
+function tryMatchCatchUpPayment(
+  line: ParsedBankStatementLine,
+  scoped: Booking[],
+): BankLineMatchResult | null {
+  const platform =
+    line.otaChannel === "airbnb"
+      ? "airbnb"
+      : line.otaChannel === "booking"
+        ? "booking"
+        : null;
+  if (!platform) {
+    return null;
+  }
+
+  const received = parseIsoDate(line.receivedDate);
+  const batches = listPlatformBatches(scoped, platform).filter((batch) => {
+    const payoutDay = parseIsoDate(batch.payoutDate);
+    const dayOffset =
+      (received.getTime() - payoutDay.getTime()) / 86_400_000;
+    return dayOffset >= -CATCH_UP_FORWARD_DAYS && dayOffset <= CATCH_UP_LOOKBACK_DAYS;
+  });
+
+  if (batches.length < 2) {
+    return null;
+  }
+
+  let best: { batchIds: string[]; diff: number } | null = null;
+
+  for (let start = 0; start < batches.length; start += 1) {
+    let sum = 0;
+    const batchIds: string[] = [];
+    for (let end = start; end < batches.length; end += 1) {
+      sum += batches[end].netExpected;
+      batchIds.push(batches[end].batchId);
+      const diff = Math.abs(sum - line.amount);
+      const tolerance = catchUpTolerance(batchIds.length, line.amount);
+      if (diff <= tolerance) {
+        if (!best || diff < best.diff) {
+          best = { batchIds: [...batchIds], diff };
+        }
+      }
+      if (sum > line.amount + tolerance * 3) {
+        break;
+      }
+    }
+  }
+
+  const allIds = batches.map((batch) => batch.batchId);
+  const allSum = roundPayoutMoney(
+    batches.reduce((total, batch) => total + batch.netExpected, 0),
+  );
+  const allDiff = Math.abs(allSum - line.amount);
+  const allTolerance = catchUpTolerance(allIds.length, line.amount);
+  if (allDiff <= allTolerance) {
+    if (!best || allDiff < best.diff) {
+      best = { batchIds: allIds, diff: allDiff };
+    }
+  }
+
+  if (!best || best.batchIds.length < 2) {
+    return null;
+  }
+
+  const first = best.batchIds[0];
+  const last = best.batchIds[best.batchIds.length - 1];
+
+  return {
+    expectedPayoutBatch: first,
+    coveredPayoutBatches: best.batchIds,
+    matchReason: `Recupero ${best.batchIds.length} batch (${first} → ${last})`,
+  };
+}
+
 export function matchBankLineToBooking(
   line: ParsedBankStatementLine,
   bookings: Booking[],
@@ -175,6 +264,11 @@ export function matchBankLineToBooking(
     return batchMatch;
   }
 
+  const catchUpMatch = tryMatchCatchUpPayment(line, scoped);
+  if (catchUpMatch) {
+    return catchUpMatch;
+  }
+
   if (line.otaChannel === "booking") {
     const payoutThursday = formatIsoDate(received);
     return {
@@ -218,6 +312,7 @@ export function convertParsedLinesToPayouts(
       counterparty: line.counterparty,
       reference: line.reference,
       expectedPayoutBatch: match.expectedPayoutBatch,
+      coveredPayoutBatches: match.coveredPayoutBatches,
       matchedBookingId: match.matchedBookingId,
       matchReason: match.matchReason,
       otaChannel: line.otaChannel,
