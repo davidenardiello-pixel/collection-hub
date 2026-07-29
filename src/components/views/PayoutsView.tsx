@@ -164,9 +164,9 @@ export function PayoutsView({
         <p className="mb-4 text-sm text-rc-muted">
           Mese del <strong className="text-rc-ink">pagamento atteso</strong> (regole:
           Booking = giovedì dopo il check-out; Airbnb/Vrbo = primo giorno lavorativo
-          dopo il check-in). Confronta cosa{" "}
-          <strong className="text-rc-ink">dovresti avere in banca</strong> con gli
-          estratti CSV caricati in basso.
+          dopo il check-in). Tutti gli importi sotto sono{" "}
+          <strong className="text-rc-ink">netti in banca</strong> (lordo prenotazione
+          + pulizie − commissione OTA). Gli accrediti CSV sono già al netto.
         </p>
         <div className="mb-4 flex flex-wrap gap-2">
           {BANK_ACCOUNT_OPTIONS.map((option) => (
@@ -198,11 +198,30 @@ export function PayoutsView({
       {activeCompany && otaOverview ? (
         <Card
           title={`Vista rapida OTA — ${activeCompany.label}`}
-          subtitle={`${MONTH_LABELS[selectedMonth - 1]} ${FISCAL_YEAR} · atteso vs incassato vs estratto conto`}
+          subtitle={`${MONTH_LABELS[selectedMonth - 1]} ${FISCAL_YEAR} · netto in banca (dopo commissioni OTA)`}
         >
-          <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {otaOverview.totals.otaBookingsMissingCommission > 0 ? (
+            <p className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+              {otaOverview.totals.otaBookingsMissingCommission} prenotazioni OTA senza
+              commissione in dashboard: l&apos;atteso potrebbe essere troppo alto
+              (lordo invece di netto). Controlla import OTA o commissioni in Incassi.
+            </p>
+          ) : null}
+          <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
             <div className="rounded-lg border border-rc-gold/20 bg-rc-charcoal/30 p-3">
-              <p className="text-xs uppercase text-rc-muted">Atteso (mese)</p>
+              <p className="text-xs uppercase text-rc-muted">Lordo (mese)</p>
+              <p className="text-lg font-semibold text-rc-muted">
+                {formatCurrency(otaOverview.totals.grossMonth)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-rc-gold/20 bg-rc-charcoal/30 p-3">
+              <p className="text-xs uppercase text-rc-muted">Commissioni OTA</p>
+              <p className="text-lg font-semibold text-amber-400/90">
+                −{formatCurrency(otaOverview.totals.commissionMonth)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-rc-gold/20 bg-rc-charcoal/30 p-3">
+              <p className="text-xs uppercase text-rc-muted">Atteso netto</p>
               <p className="text-lg font-semibold text-rc-gold-light">
                 {formatCurrency(otaOverview.totals.netExpectedMonth)}
               </p>
@@ -214,7 +233,7 @@ export function PayoutsView({
               </p>
             </div>
             <div className="rounded-lg border border-emerald-500/30 bg-rc-charcoal/30 p-3">
-              <p className="text-xs uppercase text-rc-muted">Attribuito</p>
+              <p className="text-xs uppercase text-rc-muted">Incassato (netto)</p>
               <p className="text-lg font-semibold text-emerald-400">
                 {formatCurrency(otaOverview.totals.receivedAttributed)}
               </p>
@@ -273,9 +292,21 @@ export function PayoutsView({
                         style={{ width: `${progress}%` }}
                       />
                     </div>
-                    <div className="grid gap-2 text-sm sm:grid-cols-3 lg:grid-cols-6">
+                    <div className="grid gap-2 text-sm sm:grid-cols-3 lg:grid-cols-7">
                       <div>
-                        <p className="text-xs text-rc-muted">Atteso mese</p>
+                        <p className="text-xs text-rc-muted">Lordo</p>
+                        <p className="font-medium text-rc-muted">
+                          {formatCurrency(row.grossMonth)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-rc-muted">Comm. OTA</p>
+                        <p className="font-medium text-amber-400/90">
+                          −{formatCurrency(row.commissionMonth)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-rc-muted">Netto atteso</p>
                         <p className="font-medium">
                           {formatCurrency(row.netExpectedMonth)}
                         </p>
@@ -287,7 +318,7 @@ export function PayoutsView({
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-rc-muted">Attribuito</p>
+                        <p className="text-xs text-rc-muted">Incassato netto</p>
                         <p className="font-medium text-emerald-400">
                           {formatCurrency(row.receivedAttributed)}
                         </p>
@@ -362,7 +393,7 @@ export function PayoutsView({
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card title="Totale atteso (mese)">
+        <Card title="Totale atteso netto (mese)">
           <p className="text-2xl font-semibold text-rc-gold-light">
             {formatCurrency(dashboard.netExpected)}
           </p>
@@ -370,7 +401,7 @@ export function PayoutsView({
             {dashboard.bookingCount} prenotazioni OTA
           </p>
         </Card>
-        <Card title="Totale ricevuto (da CSV)">
+        <Card title="Totale incassato netto (da CSV)">
           <p className="text-2xl font-semibold text-emerald-400">
             {formatCurrency(dashboard.receivedTotal)}
           </p>

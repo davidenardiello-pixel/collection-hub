@@ -394,6 +394,8 @@ function bankPayoutInMonth(
 export interface OtaCollectionOverviewRow {
   platformId: string;
   platformName: string;
+  grossMonth: number;
+  commissionMonth: number;
   netExpectedMonth: number;
   dueByTodayAmount: number;
   dueByTodayCount: number;
@@ -423,11 +425,14 @@ export function buildOtaCollectionOverview(
   rows: OtaCollectionOverviewRow[];
   missingItems: MissingPayoutSummaryItem[];
   totals: {
+    grossMonth: number;
+    commissionMonth: number;
     netExpectedMonth: number;
     dueByTodayAmount: number;
     receivedAttributed: number;
     stillOwedAmount: number;
     bankCsvMonth: number;
+    otaBookingsMissingCommission: number;
   };
 } {
   const today = new Date();
@@ -442,6 +447,12 @@ export function buildOtaCollectionOverview(
     let pendingAmount = 0;
     let pendingCount = 0;
     let nextPendingDate: string | undefined;
+    const grossMonth = roundMoney(
+      group.bookings.reduce((total, row) => total + row.gross, 0),
+    );
+    const commissionMonth = roundMoney(
+      group.bookings.reduce((total, row) => total + row.commission, 0),
+    );
 
     for (const row of group.bookings) {
       const due = parseIsoDate(row.expectedPayoutDate);
@@ -490,6 +501,8 @@ export function buildOtaCollectionOverview(
     return {
       platformId: group.platformId,
       platformName: group.platformName,
+      grossMonth,
+      commissionMonth,
       netExpectedMonth: group.netExpected,
       dueByTodayAmount: roundMoney(dueByTodayAmount),
       dueByTodayCount,
@@ -507,7 +520,22 @@ export function buildOtaCollectionOverview(
     left.expectedPayoutDate.localeCompare(right.expectedPayoutDate),
   );
 
+  const otaBookingsMissingCommission = company.otaGroups.reduce(
+    (total, group) =>
+      total +
+      group.bookings.filter(
+        (row) => row.commission <= 0 && row.netExpected > 0,
+      ).length,
+    0,
+  );
+
   const totals = {
+    grossMonth: roundMoney(
+      rows.reduce((total, row) => total + row.grossMonth, 0),
+    ),
+    commissionMonth: roundMoney(
+      rows.reduce((total, row) => total + row.commissionMonth, 0),
+    ),
     netExpectedMonth: roundMoney(
       rows.reduce((total, row) => total + row.netExpectedMonth, 0),
     ),
@@ -523,6 +551,7 @@ export function buildOtaCollectionOverview(
     bankCsvMonth: roundMoney(
       rows.reduce((total, row) => total + row.bankCsvMonth, 0),
     ),
+    otaBookingsMissingCommission,
   };
 
   return { rows, missingItems, totals };
