@@ -20,7 +20,7 @@ import { SettingsView } from "./views/SettingsView";
 const TABS: { id: ViewId; label: string }[] = [
   { id: "overview", label: "Panoramica" },
   { id: "income", label: "Incassi" },
-  { id: "payouts", label: "Incassi OTA" },
+  { id: "payouts", label: "Riconciliazione OTA" },
   { id: "expenses", label: "Spese" },
   { id: "monthly", label: "Mensile" },
   { id: "property", label: "Proprietà" },
