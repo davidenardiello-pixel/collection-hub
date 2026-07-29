@@ -269,6 +269,14 @@ export function PayoutsView({
             <p className="mt-1 text-xs text-rc-muted">
               Booking {formatCurrency(competenceBridge.bankCsvBooking)} · Airbnb{" "}
               {formatCurrency(competenceBridge.bankCsvAirbnb)}
+              {competenceBridge.bankCsvBookingAllAccounts >
+                competenceBridge.bankCsvBooking + 0.02 ? (
+                <>
+                  {" "}
+                  · Booking su tutti i conti:{" "}
+                  {formatCurrency(competenceBridge.bankCsvBookingAllAccounts)}
+                </>
+              ) : null}
             </p>
           </div>
         </div>
@@ -975,9 +983,15 @@ export function PayoutsView({
                   const airbnbTotal = rows
                     .filter((row) => row.otaChannel === "airbnb")
                     .reduce((sum, row) => sum + row.amount, 0);
+                  const bookingIdMatches = rows.filter(
+                    (row) =>
+                      row.otaChannel === "booking" &&
+                      row.matchReason?.startsWith("ID Booking"),
+                  ).length;
                   setImportStatus(
                     `Trovati ${rows.length} accrediti OTA (${parsed.format.toUpperCase()}). ` +
                       `Booking ${formatCurrency(bookingTotal)} · Airbnb ${formatCurrency(airbnbTotal)}. ` +
+                      `Booking con ID prenotazione collegato: ${bookingIdMatches}/${rows.filter((r) => r.otaChannel === "booking").length}. ` +
                       `Righe ignorate nel file: ${parsed.skippedRows}.`,
                   );
                 });

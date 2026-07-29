@@ -442,6 +442,34 @@ export function sumBankDepositsByOtaChannel(
   };
 }
 
+/** Somma accrediti CSV per canale su tutti i conti (archivio import). */
+export function sumBankDepositsByOtaAllAccounts(
+  bankPayouts: BankPayoutReceived[],
+  filter: { year: number; month: number },
+): { airbnb: number; booking: number; vrbo: number; total: number } {
+  const sums = { airbnb: 0, booking: 0, vrbo: 0, total: 0 };
+  for (const payout of bankPayouts) {
+    if (!bankPayoutInMonth(payout.receivedDate, filter.year, filter.month)) {
+      continue;
+    }
+    const channel = inferBankPayoutOtaChannel(payout);
+    sums.total += payout.amount;
+    if (channel === "airbnb") {
+      sums.airbnb += payout.amount;
+    } else if (channel === "booking") {
+      sums.booking += payout.amount;
+    } else if (channel === "vrbo") {
+      sums.vrbo += payout.amount;
+    }
+  }
+  return {
+    airbnb: roundMoney(sums.airbnb),
+    booking: roundMoney(sums.booking),
+    vrbo: roundMoney(sums.vrbo),
+    total: roundMoney(sums.total),
+  };
+}
+
 export interface OtaCollectionOverviewRow {
   platformId: string;
   platformName: string;

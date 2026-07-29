@@ -6,6 +6,7 @@ import {
 import {
   buildCompanyPayoutDashboard,
   sumBankDepositsByOtaChannel,
+  sumBankDepositsByOtaAllAccounts,
 } from "./payout-dashboard";
 import type {
   BankAccountId,
@@ -34,6 +35,8 @@ export interface AccountCompetenceVsPayoutBridge {
   bankCsvTotal: number;
   bankCsvBooking: number;
   bankCsvAirbnb: number;
+  bankCsvBookingAllAccounts: number;
+  bankCsvAirbnbAllAccounts: number;
   otaRows: OtaCompetenceVsPayoutRow[];
 }
 
@@ -75,6 +78,7 @@ export function buildAccountCompetenceVsPayoutBridge(
     (company) => company.accountId === accountId,
   );
   const bankCsv = sumBankDepositsByOtaChannel(bankPayouts, accountId, filter);
+  const bankCsvAll = sumBankDepositsByOtaAllAccounts(bankPayouts, filter);
 
   const platformIds = new Set<string>([
     ...(accountIncome?.platforms.map((platform) => platform.id) ?? []),
@@ -129,6 +133,8 @@ export function buildAccountCompetenceVsPayoutBridge(
     bankCsvTotal: bankCsv.total,
     bankCsvBooking: bankCsv.booking,
     bankCsvAirbnb: bankCsv.airbnb,
+    bankCsvBookingAllAccounts: bankCsvAll.booking,
+    bankCsvAirbnbAllAccounts: bankCsvAll.airbnb,
     otaRows,
   };
 }

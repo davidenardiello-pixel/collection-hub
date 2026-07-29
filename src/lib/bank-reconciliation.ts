@@ -1,5 +1,5 @@
 import { getPropertyBankAccount } from "./bank-accounts";
-import { getBookingBankDeposit } from "./bank-accounts";
+import { getBookingBankDeposit, getBankAccountLabel } from "./bank-accounts";
 import {
   applyExpectedPayoutFields,
   formatIsoDate,
@@ -204,17 +204,48 @@ function tryMatchCatchUpPayment(
   };
 }
 
+function bookingMatchesExternalId(
+  booking: Booking,
+  externalId: string,
+): boolean {
+  if (!booking.externalId) {
+    return false;
+  }
+  return (
+    booking.externalId === externalId ||
+    booking.externalId.replace(/^0+/, "") === externalId.replace(/^0+/, "")
+  );
+}
+
 export function matchBankLineToBooking(
   line: ParsedBankStatementLine,
   bookings: Booking[],
   properties: Property[],
   bankAccountId: BankAccountId,
 ): BankLineMatchResult {
+  if (line.externalBookingId) {
+    const byExternalGlobal = bookings.find((booking) =>
+      bookingMatchesExternalId(booking, line.externalBookingId!),
+    );
+    if (byExternalGlobal) {
+      const payout = applyExpectedPayoutFields(byExternalGlobal);
+      const propertyAccount = getPropertyBankAccount(
+        byExternalGlobal.propertyId,
+        properties,
+      );
+      return {
+        matchedBookingId: byExternalGlobal.id,
+        expectedPayoutBatch: payout.expectedPayoutBatch,
+        matchReason: `ID Booking ${line.externalBookingId} (${getBankAccountLabel(propertyAccount)})`,
+      };
+    }
+  }
+
   const scoped = bookingsForBankAccount(bookings, properties, bankAccountId);
 
   if (line.externalBookingId) {
-    const byExternal = scoped.find(
-      (booking) => booking.externalId === line.externalBookingId,
+    const byExternal = scoped.find((booking) =>
+      bookingMatchesExternalId(booking, line.externalBookingId!),
     );
     if (byExternal) {
       const payout = applyExpectedPayoutFields(byExternal);
@@ -239,7 +270,8 @@ export function matchBankLineToBooking(
       );
       const net = getBookingBankDeposit(booking);
       const amountDiff = Math.abs(net - line.amount);
-      if (dayDiff > 5 || amountDiff > AMOUNT_TOLERANCE) {
+      const maxDayDiff = line.otaChannel === "booking" ? 21 : 5;
+      if (dayDiff > maxDayDiff || amountDiff > AMOUNT_TOLERANCE) {
         return null;
       }
       return { booking, payout, dayDiff, amountDiff };

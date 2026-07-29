@@ -54,6 +54,24 @@ export function allocatePayoutAmountToBatch(
   properties: Property[],
   bankAccountId: BankAccountId,
 ): number {
+  if (payout.matchedBookingId) {
+    const linked = bookings.find(
+      (booking) => booking.id === payout.matchedBookingId,
+    );
+    if (linked) {
+      const linkedAccount = getPropertyBankAccount(
+        linked.propertyId,
+        properties,
+      );
+      if (linkedAccount === bankAccountId) {
+        const enriched = applyExpectedPayoutFields(linked);
+        if (enriched.expectedPayoutBatch === batchId) {
+          return roundPayoutMoney(payout.amount);
+        }
+      }
+    }
+  }
+
   if (!payoutCoversBatch(payout, batchId)) {
     return 0;
   }
