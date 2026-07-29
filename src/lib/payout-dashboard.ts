@@ -366,3 +366,164 @@ export function bookingPayoutStatusClass(status: BookingPayoutStatus): string {
       return "text-rc-muted";
   }
 }
+
+function platformToBankOtaChannel(
+  platformId: string,
+): "airbnb" | "booking" | "vrbo" | undefined {
+  if (platformId === "airbnb") {
+    return "airbnb";
+  }
+  if (platformId === "booking") {
+    return "booking";
+  }
+  if (platformId === "vrbo") {
+    return "vrbo";
+  }
+  return undefined;
+}
+
+function bankPayoutInMonth(
+  receivedDate: string,
+  year: number,
+  month: number,
+): boolean {
+  const [y, m] = receivedDate.split("-").map(Number);
+  return y === year && m === month;
+}
+
+export interface OtaCollectionOverviewRow {
+  platformId: string;
+  platformName: string;
+  netExpectedMonth: number;
+  dueByTodayAmount: number;
+  dueByTodayCount: number;
+  receivedAttributed: number;
+  stillOwedAmount: number;
+  missingCount: number;
+  pendingAmount: number;
+  pendingCount: number;
+  nextPendingDate?: string;
+  bankCsvMonth: number;
+}
+
+export interface MissingPayoutSummaryItem {
+  platformId: string;
+  platformName: string;
+  expectedPayoutDate: string;
+  netStillOwed: number;
+  guest: string;
+  propertyName: string;
+}
+
+export function buildOtaCollectionOverview(
+  company: CompanyPayoutGroup,
+  bankPayouts: BankPayoutReceived[],
+  filter: { year: number; month: number },
+): {
+  rows: OtaCollectionOverviewRow[];
+  missingItems: MissingPayoutSummaryItem[];
+  totals: {
+    netExpectedMonth: number;
+    dueByTodayAmount: number;
+    receivedAttributed: number;
+    stillOwedAmount: number;
+    bankCsvMonth: number;
+  };
+} {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const missingItems: MissingPayoutSummaryItem[] = [];
+
+  const rows: OtaCollectionOverviewRow[] = company.otaGroups.map((group) => {
+    let dueByTodayAmount = 0;
+    let dueByTodayCount = 0;
+    let stillOwedAmount = 0;
+    let missingCount = 0;
+    let pendingAmount = 0;
+    let pendingCount = 0;
+    let nextPendingDate: string | undefined;
+
+    for (const row of group.bookings) {
+      const due = parseIsoDate(row.expectedPayoutDate);
+      if (due <= today) {
+        dueByTodayAmount += row.netExpected;
+        dueByTodayCount += 1;
+      }
+
+      const owed = Math.max(0, row.netExpected - row.receivedAmount);
+      if (row.status === "missing" || row.status === "partial") {
+        stillOwedAmount += owed;
+        if (row.status === "missing") {
+          missingCount += 1;
+        }
+        missingItems.push({
+          platformId: group.platformId,
+          platformName: group.platformName,
+          expectedPayoutDate: row.expectedPayoutDate,
+          netStillOwed: roundMoney(owed),
+          guest: row.guest,
+          propertyName: row.propertyName,
+        });
+      }
+
+      if (row.status === "pending") {
+        pendingAmount += row.netExpected;
+        pendingCount += 1;
+        if (!nextPendingDate || row.expectedPayoutDate < nextPendingDate) {
+          nextPendingDate = row.expectedPayoutDate;
+        }
+      }
+    }
+
+    const channel = platformToBankOtaChannel(group.platformId);
+    const bankCsvMonth = roundMoney(
+      bankPayouts
+        .filter(
+          (payout) =>
+            payout.bankAccountId === company.accountId &&
+            bankPayoutInMonth(payout.receivedDate, filter.year, filter.month) &&
+            (channel ? payout.otaChannel === channel : true),
+        )
+        .reduce((total, payout) => total + payout.amount, 0),
+    );
+
+    return {
+      platformId: group.platformId,
+      platformName: group.platformName,
+      netExpectedMonth: group.netExpected,
+      dueByTodayAmount: roundMoney(dueByTodayAmount),
+      dueByTodayCount,
+      receivedAttributed: group.receivedTotal,
+      stillOwedAmount: roundMoney(stillOwedAmount),
+      missingCount,
+      pendingAmount: roundMoney(pendingAmount),
+      pendingCount,
+      nextPendingDate,
+      bankCsvMonth,
+    };
+  });
+
+  missingItems.sort((left, right) =>
+    left.expectedPayoutDate.localeCompare(right.expectedPayoutDate),
+  );
+
+  const totals = {
+    netExpectedMonth: roundMoney(
+      rows.reduce((total, row) => total + row.netExpectedMonth, 0),
+    ),
+    dueByTodayAmount: roundMoney(
+      rows.reduce((total, row) => total + row.dueByTodayAmount, 0),
+    ),
+    receivedAttributed: roundMoney(
+      rows.reduce((total, row) => total + row.receivedAttributed, 0),
+    ),
+    stillOwedAmount: roundMoney(
+      rows.reduce((total, row) => total + row.stillOwedAmount, 0),
+    ),
+    bankCsvMonth: roundMoney(
+      rows.reduce((total, row) => total + row.bankCsvMonth, 0),
+    ),
+  };
+
+  return { rows, missingItems, totals };
+}

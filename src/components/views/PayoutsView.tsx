@@ -17,6 +17,7 @@ import {
   bookingPayoutStatusClass,
   bookingPayoutStatusLabel,
   buildCompanyPayoutDashboard,
+  buildOtaCollectionOverview,
 } from "@/lib/payout-dashboard";
 import { convertParsedLinesToPayouts } from "@/lib/bank-reconciliation";
 import { parseBankStatementCsv } from "@/lib/bank-statement-import";
@@ -147,16 +148,40 @@ export function PayoutsView({
       ? null
       : activeCompany?.otaGroups.find((group) => group.platformId === selectedOta);
 
+  const otaOverview = useMemo(() => {
+    if (!activeCompany) {
+      return null;
+    }
+    return buildOtaCollectionOverview(activeCompany, bankPayouts, {
+      year: FISCAL_YEAR,
+      month: selectedMonth,
+    });
+  }, [activeCompany, bankPayouts, selectedMonth]);
+
   return (
     <div className="space-y-6">
       <Card title="Riconciliazione incassi OTA per azienda">
         <p className="mb-4 text-sm text-rc-muted">
-          Scegli il <strong className="text-rc-ink">mese del pagamento atteso</strong>.
-          Gli importi <strong className="text-rc-ink">da ricevere</strong> derivano
-          solo dalle prenotazioni già in dashboard (import OTA e incassi). In
-          basso carichi gli <strong className="text-rc-ink">estratti conto CSV</strong>{" "}
-          per abbinare cosa è effettivamente arrivato in banca.
+          Mese del <strong className="text-rc-ink">pagamento atteso</strong> (regole:
+          Booking = giovedì dopo il check-out; Airbnb/Vrbo = primo giorno lavorativo
+          dopo il check-in). Confronta cosa{" "}
+          <strong className="text-rc-ink">dovresti avere in banca</strong> con gli
+          estratti CSV caricati in basso.
         </p>
+        <div className="mb-4 flex flex-wrap gap-2">
+          {BANK_ACCOUNT_OPTIONS.map((option) => (
+            <TabPill
+              key={option.id}
+              active={selectedCompany === option.id}
+              onClick={() => {
+                setSelectedCompany(option.id);
+                setSelectedOta("all");
+              }}
+            >
+              {option.label}
+            </TabPill>
+          ))}
+        </div>
         <div className="flex flex-wrap gap-2">
           {MONTH_LABELS.map((label, index) => (
             <TabPill
@@ -168,7 +193,173 @@ export function PayoutsView({
             </TabPill>
           ))}
         </div>
-      </Card>
+        </Card>
+
+      {activeCompany && otaOverview ? (
+        <Card
+          title={`Vista rapida OTA — ${activeCompany.label}`}
+          subtitle={`${MONTH_LABELS[selectedMonth - 1]} ${FISCAL_YEAR} · atteso vs incassato vs estratto conto`}
+        >
+          <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="rounded-lg border border-rc-gold/20 bg-rc-charcoal/30 p-3">
+              <p className="text-xs uppercase text-rc-muted">Atteso (mese)</p>
+              <p className="text-lg font-semibold text-rc-gold-light">
+                {formatCurrency(otaOverview.totals.netExpectedMonth)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-rc-gold/20 bg-rc-charcoal/30 p-3">
+              <p className="text-xs uppercase text-rc-muted">Già scaduto</p>
+              <p className="text-lg font-semibold text-rc-ink">
+                {formatCurrency(otaOverview.totals.dueByTodayAmount)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-emerald-500/30 bg-rc-charcoal/30 p-3">
+              <p className="text-xs uppercase text-rc-muted">Attribuito</p>
+              <p className="text-lg font-semibold text-emerald-400">
+                {formatCurrency(otaOverview.totals.receivedAttributed)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-rose-500/30 bg-rc-charcoal/30 p-3">
+              <p className="text-xs uppercase text-rc-muted">Manca ancora</p>
+              <p className="text-lg font-semibold text-rose-400">
+                {formatCurrency(otaOverview.totals.stillOwedAmount)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-rc-gold/20 bg-rc-charcoal/30 p-3">
+              <p className="text-xs uppercase text-rc-muted">In CSV (mese)</p>
+              <p className="text-lg font-semibold text-rc-ink">
+                {formatCurrency(otaOverview.totals.bankCsvMonth)}
+              </p>
+            </div>
+          </div>
+
+          {otaOverview.rows.length === 0 ? (
+            <p className="text-sm text-rc-muted">
+              Nessun pagamento OTA atteso per {activeCompany.label} in questo mese.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {otaOverview.rows.map((row) => {
+                const progress =
+                  row.dueByTodayAmount > 0
+                    ? Math.min(
+                        100,
+                        (row.receivedAttributed / row.dueByTodayAmount) * 100,
+                      )
+                    : row.receivedAttributed > 0
+                      ? 100
+                      : 0;
+                return (
+                  <div
+                    key={row.platformId}
+                    className="rounded-xl border border-rc-gold/15 bg-rc-charcoal/25 p-4"
+                  >
+                    <div className="mb-2 flex flex-wrap items-end justify-between gap-2">
+                      <p className="text-base font-semibold text-rc-gold-light">
+                        {row.platformName}
+                      </p>
+                      <p className="text-xs text-rc-muted">
+                        {row.dueByTodayCount} pag. scaduti ·{" "}
+                        <span className="text-rose-400">{row.missingCount}</span>{" "}
+                        mancanti
+                        {row.pendingCount > 0
+                          ? ` · ${row.pendingCount} in arrivo`
+                          : ""}
+                      </p>
+                    </div>
+                    <div className="mb-3 h-2 overflow-hidden rounded-full bg-rc-charcoal">
+                      <div
+                        className="h-full rounded-full bg-emerald-500/80 transition-all"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                    <div className="grid gap-2 text-sm sm:grid-cols-3 lg:grid-cols-6">
+                      <div>
+                        <p className="text-xs text-rc-muted">Atteso mese</p>
+                        <p className="font-medium">
+                          {formatCurrency(row.netExpectedMonth)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-rc-muted">Scaduto</p>
+                        <p className="font-medium">
+                          {formatCurrency(row.dueByTodayAmount)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-rc-muted">Attribuito</p>
+                        <p className="font-medium text-emerald-400">
+                          {formatCurrency(row.receivedAttributed)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-rc-muted">Manca</p>
+                        <p className="font-medium text-rose-400">
+                          {formatCurrency(row.stillOwedAmount)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-rc-muted">In arrivo</p>
+                        <p className="font-medium text-rc-muted">
+                          {formatCurrency(row.pendingAmount)}
+                          {row.nextPendingDate
+                            ? ` · da ${formatDate(row.nextPendingDate)}`
+                            : ""}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-rc-muted">CSV banca</p>
+                        <p className="font-medium">
+                          {formatCurrency(row.bankCsvMonth)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {otaOverview.missingItems.length > 0 ? (
+            <div className="mt-8">
+              <p className="mb-3 text-sm font-medium text-rose-300">
+                Da incassare (scaduto o parziale)
+              </p>
+              <DataTable
+                headers={[
+                  "Data attesa",
+                  "OTA",
+                  "Ospite",
+                  "Appartamento",
+                  "Importo mancante",
+                ]}
+              >
+                {otaOverview.missingItems.slice(0, 20).map((item, index) => (
+                  <DataRow key={`${item.platformId}-${item.expectedPayoutDate}-${index}`}>
+                    <td className="px-2 py-2 text-sm">
+                      {formatDate(item.expectedPayoutDate)}
+                    </td>
+                    <td className="px-2 py-2 text-sm">{item.platformName}</td>
+                    <td className="px-2 py-2">{item.guest}</td>
+                    <td className="px-2 py-2 text-sm text-rc-muted">
+                      {item.propertyName}
+                    </td>
+                    <td className="px-2 py-2 font-medium text-rose-400">
+                      <Money value={item.netStillOwed} />
+                    </td>
+                  </DataRow>
+                ))}
+              </DataTable>
+              {otaOverview.missingItems.length > 20 ? (
+                <p className="mt-2 text-xs text-rc-muted">
+                  Mostrati i primi 20 di {otaOverview.missingItems.length} — usa il
+                  dettaglio prenotazioni sotto per l&apos;elenco completo.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card title="Totale atteso (mese)">
