@@ -53,6 +53,10 @@ export interface Booking {
   /** Check-in già trascorso: non modificare/rimuovere ai sync successivi. */
   locked?: boolean;
   notes?: string;
+  /** Data attesa accredito OTA (calcolata da piattaforma e date soggiorno). */
+  expectedPayoutDate?: string;
+  /** Identificativo bonifico atteso (es. BK-2026-07-09, ABB-2026-07-18). */
+  expectedPayoutBatch?: string;
 }
 
 export interface Expense {
@@ -87,6 +91,16 @@ export interface OtaImportSnapshot {
   guests: string[];
 }
 
+export interface BankPayoutReceived {
+  id: string;
+  bankAccountId: BankAccountId;
+  receivedDate: string;
+  amount: number;
+  reference?: string;
+  expectedPayoutBatch?: string;
+  notes?: string;
+}
+
 export interface DashboardData {
   bookings: Booking[];
   expenses: Expense[];
@@ -97,6 +111,8 @@ export interface DashboardData {
   automation: AutomationSettings;
   /** Ultimi file OTA caricati dalla dashboard (non dalla cartella locale). */
   otaImportSnapshots?: OtaImportSnapshot[];
+  /** Bonifici registrati (estratto conto / inserimento manuale) per riconciliazione. */
+  bankPayouts?: BankPayoutReceived[];
 }
 
 export type ViewId =
@@ -105,6 +121,7 @@ export type ViewId =
   | "expenses"
   | "monthly"
   | "property"
+  | "payouts"
   | "settings";
 
 export interface MonthPeriod {

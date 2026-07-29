@@ -8,6 +8,7 @@ import {
 } from "@/lib/automation";
 import { resyncPropertyBookingCleaningExpenses } from "@/lib/booking-cleaning";
 import { normalizeBookingCommission } from "@/lib/booking-commission";
+import { applyExpectedPayoutFields } from "@/lib/ota-payout";
 import {
   removeAllBookingLinkedExpenses,
   upsertAllBookingLinkedExpenses,
@@ -22,7 +23,11 @@ import {
   MAX_PROPERTIES,
   STORAGE_KEY,
 } from "@/lib/constants";
-import type { BankAccountId, PropertyCityId } from "@/lib/types";
+import type {
+  BankAccountId,
+  BankPayoutReceived,
+  PropertyCityId,
+} from "@/lib/types";
 import { createUniqueId, normalizeDashboardData } from "@/lib/migrate";
 import { removePropertyFromDashboard } from "@/lib/property-removal";
 import {
@@ -116,7 +121,7 @@ export function useLocalDashboardStorage() {
     (booking: Omit<Booking, "id">) => {
       persist((current) => {
         const id = crypto.randomUUID();
-        const saved = {
+        const saved = applyExpectedPayoutFields({
           ...normalizeBookingCommission({
             ...booking,
             id,
@@ -124,7 +129,7 @@ export function useLocalDashboardStorage() {
             importedFromExcel: false,
           }),
           id,
-        };
+        });
 
         return refreshAutomatedCleaningExpenses({
           ...current,
@@ -148,7 +153,7 @@ export function useLocalDashboardStorage() {
         const existing = current.bookings.find((item) => item.id === id);
         const importedFromExcel =
           existing?.importedFromExcel ?? booking.importedFromExcel ?? false;
-        const saved = {
+        const saved = applyExpectedPayoutFields({
           ...normalizeBookingCommission({
             ...booking,
             id,
@@ -160,7 +165,7 @@ export function useLocalDashboardStorage() {
                 false),
           }),
           id,
-        };
+        });
 
         return refreshAutomatedCleaningExpenses({
           ...current,
@@ -844,6 +849,41 @@ export function useLocalDashboardStorage() {
     [persist],
   );
 
+  const addBankPayout = useCallback(
+    (payout: Omit<BankPayoutReceived, "id">) => {
+      persist((current) => ({
+        ...current,
+        bankPayouts: [
+          { ...payout, id: crypto.randomUUID() },
+          ...(current.bankPayouts ?? []),
+        ],
+      }));
+    },
+    [persist],
+  );
+
+  const updateBankPayout = useCallback(
+    (id: string, payout: Omit<BankPayoutReceived, "id">) => {
+      persist((current) => ({
+        ...current,
+        bankPayouts: (current.bankPayouts ?? []).map((item) =>
+          item.id === id ? { ...payout, id } : item,
+        ),
+      }));
+    },
+    [persist],
+  );
+
+  const removeBankPayout = useCallback(
+    (id: string) => {
+      persist((current) => ({
+        ...current,
+        bankPayouts: (current.bankPayouts ?? []).filter((item) => item.id !== id),
+      }));
+    },
+    [persist],
+  );
+
   return {
     data,
     loading: false,
@@ -858,6 +898,7 @@ export function useLocalDashboardStorage() {
     expenseCategories: data.expenseCategories,
     profitTargets: data.profitTargets,
     automation: data.automation,
+    bankPayouts: data.bankPayouts ?? [],
     addBooking,
     updateBooking,
     duplicateBooking,
@@ -886,5 +927,8 @@ export function useLocalDashboardStorage() {
     resetToSeed,
     clearAll,
     clearTransactions,
+    addBankPayout,
+    updateBankPayout,
+    removeBankPayout,
   };
 }

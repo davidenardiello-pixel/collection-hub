@@ -26,6 +26,7 @@ import {
   DEFAULT_PROPERTY_CITY,
 } from "./constants";
 import { normalizeBankAccount } from "./bank-accounts";
+import { applyExpectedPayoutFields } from "./ota-payout";
 import { normalizePropertyCity } from "./property-cities";
 import type {
   AutomationSettings,
@@ -177,14 +178,15 @@ export function normalizeDashboardData(
   const bookings = (raw?.bookings ?? []).map((booking) => {
     const normalized = normalizeBookingCommission(booking as Booking);
     const importedFromExcel = isExcelBaselineBooking(normalized);
-
-    return {
+    const withPayout = applyExpectedPayoutFields({
       ...normalized,
       importedFromExcel,
       legacyIncomeAttribution: importedFromExcel
         ? true
         : (normalized.legacyIncomeAttribution ?? false),
-    };
+    });
+
+    return withPayout;
   });
   const expenses = (raw?.expenses ?? []).map((expense) => {
     const importedFromExcel = isExcelBaselineExpense(expense as Expense);
@@ -214,6 +216,7 @@ export function normalizeDashboardData(
     otaImportSnapshots: Array.isArray(raw?.otaImportSnapshots)
       ? raw.otaImportSnapshots
       : [],
+    bankPayouts: Array.isArray(raw?.bankPayouts) ? raw.bankPayouts : [],
   };
 
   return pruneStaleRentKrossAutomation(

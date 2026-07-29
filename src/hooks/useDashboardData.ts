@@ -49,6 +49,7 @@ export function useDashboardData() {
       expenseCategories: empty.expenseCategories,
       profitTargets: empty.profitTargets,
       automation: empty.automation,
+      bankPayouts: empty.bankPayouts ?? [],
       addBooking: local.addBooking,
       updateBooking: local.updateBooking,
       duplicateBooking: local.duplicateBooking,
@@ -77,6 +78,9 @@ export function useDashboardData() {
       resetToSeed: local.resetToSeed,
       clearAll: local.clearAll,
       clearTransactions: local.clearTransactions,
+      addBankPayout: local.addBankPayout,
+      updateBankPayout: local.updateBankPayout,
+      removeBankPayout: local.removeBankPayout,
     };
   }
 

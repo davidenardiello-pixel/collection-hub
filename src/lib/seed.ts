@@ -46,5 +46,6 @@ export function createSeedData(): DashboardData {
     profitTargets: createEmptyProfitTargets(),
     automation: { ...DEFAULT_AUTOMATION_SETTINGS },
     otaImportSnapshots: [],
+    bankPayouts: [],
   };
 }
