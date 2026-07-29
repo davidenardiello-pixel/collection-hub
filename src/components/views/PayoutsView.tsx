@@ -602,9 +602,13 @@ export function PayoutsView({
                   });
                   if (parsed.lines.length === 0) {
                     setImportPreview(null);
-                    setImportStatus(
-                      "Nessun accredito OTA riconosciuto nel file. Controlla formato Finom/BPER e conto selezionato.",
-                    );
+                    const detail =
+                      parsed.format === "unknown"
+                        ? "Formato non riconosciuto: usa CSV Finom (virgola) o movimenti BPER (punto e virgola, colonne Contabile/Descrizione/Importo)."
+                        : parsed.format === "bper"
+                          ? `BPER riconosciuto, ma nessuna riga «BONIFICI ESTERI» Airbnb/Booking. Righe saltate: ${parsed.skippedRows}.`
+                          : `Finom riconosciuto, ma nessun accredito Airbnb/Booking/Vrbo. Righe saltate: ${parsed.skippedRows}.`;
+                    setImportStatus(detail);
                     return;
                   }
                   const rows = convertParsedLinesToPayouts(

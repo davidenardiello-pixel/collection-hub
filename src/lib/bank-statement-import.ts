@@ -104,8 +104,17 @@ export function parseBankStatementCsv(
   }
 
   if (
-    header.includes("societa") &&
+    (header.includes("societa") || header.includes("societ")) &&
     header.includes("importo") &&
+    rows[0].includes(";")
+  ) {
+    return parseBperCsv(rows, context);
+  }
+
+  if (
+    header.includes("descrizione") &&
+    header.includes("importo") &&
+    header.includes("contabile") &&
     rows[0].includes(";")
   ) {
     return parseBperCsv(rows, context);
@@ -172,6 +181,58 @@ function parseFinomCsv(
   return { format: "finom", lines, skippedRows };
 }
 
+function findBperColumnIndices(headerRow: string): {
+  contabileIdx: number;
+  descrizioneIdx: number;
+  importoIdx: number;
+} | null {
+  const cells = headerRow.split(";").map((cell) =>
+    cell
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{M}/gu, ""),
+  );
+  const contabileIdx = cells.findIndex((cell) => cell.includes("contabile"));
+  const descrizioneIdx = cells.findIndex((cell) => cell.includes("descrizione"));
+  const importoIdx = cells.findIndex((cell) => cell === "importo" || cell.startsWith("importo"));
+  if (contabileIdx < 0 || descrizioneIdx < 0 || importoIdx < 0) {
+    return null;
+  }
+  return { contabileIdx, descrizioneIdx, importoIdx };
+}
+
+function parseBperRowFields(
+  row: string,
+  indices: {
+    contabileIdx: number;
+    descrizioneIdx: number;
+    importoIdx: number;
+  },
+): { receivedDate?: string; description: string; amount: number } | null {
+  const parts = row.split(";");
+  const minParts = indices.importoIdx + 1;
+  if (parts.length < minParts) {
+    return null;
+  }
+
+  const receivedDate = parseBperDate(parts[indices.contabileIdx] ?? "");
+  let description: string;
+  let amountRaw: string;
+
+  if (parts.length > minParts && parts.length >= indices.descrizioneIdx + 2) {
+    // Ultima colonna = Div.; penultima = Importo
+    amountRaw = parts[parts.length - 2] ?? "";
+    description = parts.slice(indices.descrizioneIdx, parts.length - 2).join(";");
+  } else {
+    amountRaw = parts[indices.importoIdx] ?? "";
+    description = parts[indices.descrizioneIdx] ?? "";
+  }
+
+  const amount = parseItalianAmount(amountRaw);
+  return { receivedDate, description, amount };
+}
+
 function parseBperCsv(
   rows: string[],
   context: {
@@ -181,17 +242,19 @@ function parseBperCsv(
 ): BankStatementParseResult {
   const lines: ParsedBankStatementLine[] = [];
   let skippedRows = 0;
+  const columnIndices = findBperColumnIndices(rows[0] ?? "");
+  if (!columnIndices) {
+    return { format: "bper", lines: [], skippedRows: rows.length - 1 };
+  }
 
   for (const row of rows.slice(1)) {
-    const cells = row.split(";");
-    if (cells.length < 9) {
+    const fields = parseBperRowFields(row, columnIndices);
+    if (!fields) {
       skippedRows += 1;
       continue;
     }
 
-    const receivedDate = parseBperDate(cells[3] ?? "");
-    const description = cells[6] ?? "";
-    const amount = parseItalianAmount(cells[7] ?? "");
+    const { receivedDate, description, amount } = fields;
 
     if (!receivedDate || !Number.isFinite(amount) || amount <= 0) {
       skippedRows += 1;
