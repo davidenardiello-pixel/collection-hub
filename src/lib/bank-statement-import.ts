@@ -19,8 +19,12 @@ export interface BankStatementParseResult {
 }
 
 export function extractBookingExternalId(text: string): string | undefined {
-  const match = text.match(/ID\.(\d+)/i);
-  return match?.[1];
+  const dotted = text.match(/ID\.(\d+)/i);
+  if (dotted?.[1]) {
+    return dotted[1];
+  }
+  const spaced = text.match(/\bID[:\s]+(\d{6,})\b/i);
+  return spaced?.[1];
 }
 
 function parseItalianAmount(value: string): number {
@@ -28,12 +32,40 @@ function parseItalianAmount(value: string): number {
   return Number(normalized);
 }
 
-function parseFinomDate(value: string): string | undefined {
-  const match = value.trim().match(/^(\d{2})\.(\d{2})\.(\d{4})/);
-  if (!match) {
-    return undefined;
+function parseFinomAmount(value: string): number {
+  const cleaned = value
+    .trim()
+    .replace(/\u00a0/g, " ")
+    .replace(/[€]/g, "")
+    .replace(/\s*EUR\s*/gi, "")
+    .trim();
+  if (!cleaned) {
+    return Number.NaN;
   }
-  return `${match[3]}-${match[2]}-${match[1]}`;
+  if (cleaned.includes(",") && cleaned.includes(".")) {
+    return parseItalianAmount(cleaned);
+  }
+  if (cleaned.includes(",")) {
+    return parseItalianAmount(cleaned);
+  }
+  return Number(cleaned);
+}
+
+function parseFinomDate(value: string): string | undefined {
+  const trimmed = value.trim();
+  const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  }
+  const slash = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (slash) {
+    return `${slash[3]}-${slash[2]}-${slash[1]}`;
+  }
+  const dot = trimmed.match(/^(\d{2})\.(\d{2})\.(\d{4})/);
+  if (dot) {
+    return `${dot[3]}-${dot[2]}-${dot[1]}`;
+  }
+  return undefined;
 }
 
 function parseBperDate(value: string): string | undefined {
@@ -49,7 +81,10 @@ function detectOtaChannel(text: string): OtaBankChannel {
   if (upper.includes("AIRBNB")) {
     return "airbnb";
   }
-  if (upper.includes("BOOKING.COM") || upper.includes("BOOKING.COM")) {
+  if (upper.includes("BOOKING.COM") || upper.includes("BOOKING COM")) {
+    return "booking";
+  }
+  if (/\bBOOKING\b/.test(upper) && upper.includes("B.V")) {
     return "booking";
   }
   if (upper.includes("VRBO") || upper.includes("HOMEAWAY")) {
@@ -123,6 +158,36 @@ export function parseBankStatementCsv(
   return { format: "unknown", lines: [], skippedRows: rows.length - 1 };
 }
 
+function findFinomColumnIndices(headerRow: string): {
+  dateIdx: number;
+  counterpartyIdx: number;
+  referenceIdx: number;
+  amountIdx: number;
+} | null {
+  const cells = parseCsvLine(headerRow, ",").map((cell) =>
+    cell.trim().toLowerCase(),
+  );
+  const dateIdx = cells.findIndex(
+    (cell) => cell.includes("completed date") || cell === "date",
+  );
+  const counterpartyIdx = cells.findIndex((cell) =>
+    cell.includes("counterparty"),
+  );
+  const referenceIdx = cells.findIndex((cell) => cell.includes("reference"));
+  const amountIdx = cells.findIndex(
+    (cell) => cell === "amount" || cell.startsWith("amount"),
+  );
+  if (
+    dateIdx < 0 ||
+    counterpartyIdx < 0 ||
+    referenceIdx < 0 ||
+    amountIdx < 0
+  ) {
+    return null;
+  }
+  return { dateIdx, counterpartyIdx, referenceIdx, amountIdx };
+}
+
 function parseFinomCsv(
   rows: string[],
   context: {
@@ -132,18 +197,25 @@ function parseFinomCsv(
 ): BankStatementParseResult {
   const lines: ParsedBankStatementLine[] = [];
   let skippedRows = 0;
+  const columnIndices = findFinomColumnIndices(rows[0] ?? "");
+  const useIndices = columnIndices ?? {
+    dateIdx: 0,
+    counterpartyIdx: 1,
+    referenceIdx: 2,
+    amountIdx: 3,
+  };
 
   for (const row of rows.slice(1)) {
     const cells = parseCsvLine(row, ",");
-    if (cells.length < 4) {
+    if (cells.length <= useIndices.amountIdx) {
       skippedRows += 1;
       continue;
     }
 
-    const receivedDate = parseFinomDate(cells[0]);
-    const counterparty = cells[1] ?? "";
-    const reference = cells[2] ?? "";
-    const amount = Number(cells[3]);
+    const receivedDate = parseFinomDate(cells[useIndices.dateIdx] ?? "");
+    const counterparty = cells[useIndices.counterpartyIdx] ?? "";
+    const reference = cells[useIndices.referenceIdx] ?? "";
+    const amount = parseFinomAmount(cells[useIndices.amountIdx] ?? "");
 
     if (!receivedDate || !Number.isFinite(amount) || amount <= 0) {
       skippedRows += 1;

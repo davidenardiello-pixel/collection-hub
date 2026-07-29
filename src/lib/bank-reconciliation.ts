@@ -3,6 +3,7 @@ import { getBookingBankDeposit } from "./bank-accounts";
 import {
   applyExpectedPayoutFields,
   formatIsoDate,
+  getOtaPayoutPlatform,
   parseIsoDate,
 } from "./ota-payout";
 import type { ParsedBankStatementLine } from "./bank-statement-import";
@@ -21,12 +22,11 @@ export interface BankLineMatchResult {
   matchReason?: string;
 }
 
-export function matchBankLineToBooking(
-  line: ParsedBankStatementLine,
+function bookingsForBankAccount(
   bookings: Booking[],
   properties: Property[],
   bankAccountId: BankAccountId,
-): BankLineMatchResult {
+): Booking[] {
   const propertyIds = new Set(
     properties
       .filter(
@@ -36,9 +36,92 @@ export function matchBankLineToBooking(
       .map((property) => property.id),
   );
 
-  const scoped = bookings.filter((booking) =>
-    propertyIds.has(booking.propertyId),
-  );
+  return bookings.filter((booking) => propertyIds.has(booking.propertyId));
+}
+
+function batchNetExpected(batchId: string, scoped: Booking[]): number {
+  return scoped
+    .map(applyExpectedPayoutFields)
+    .filter((booking) => booking.expectedPayoutBatch === batchId)
+    .reduce((total, booking) => total + getBookingBankDeposit(booking), 0);
+}
+
+function batchBookingCount(batchId: string, scoped: Booking[]): number {
+  return scoped
+    .map(applyExpectedPayoutFields)
+    .filter((booking) => booking.expectedPayoutBatch === batchId).length;
+}
+
+function tryMatchAggregatedBatch(
+  line: ParsedBankStatementLine,
+  scoped: Booking[],
+): BankLineMatchResult | null {
+  const received = parseIsoDate(line.receivedDate);
+  const candidateBatchIds = new Set<string>();
+
+  if (line.otaChannel === "airbnb") {
+    candidateBatchIds.add(`ABB-${line.receivedDate}`);
+  }
+  if (line.otaChannel === "booking") {
+    candidateBatchIds.add(`BK-${line.receivedDate}`);
+  }
+
+  for (const booking of scoped) {
+    const payout = applyExpectedPayoutFields(booking);
+    if (!payout.expectedPayoutBatch || !payout.expectedPayoutDate) {
+      continue;
+    }
+    const platform = getOtaPayoutPlatform(booking.platformId);
+    if (line.otaChannel === "airbnb" && platform !== "airbnb") {
+      continue;
+    }
+    if (line.otaChannel === "booking" && platform !== "booking") {
+      continue;
+    }
+    const expected = parseIsoDate(payout.expectedPayoutDate);
+    const dayDiff = Math.abs(
+      (received.getTime() - expected.getTime()) / 86_400_000,
+    );
+    if (dayDiff <= 7) {
+      candidateBatchIds.add(payout.expectedPayoutBatch);
+    }
+  }
+
+  let best: { batchId: string; diff: number; count: number } | null = null;
+
+  for (const batchId of candidateBatchIds) {
+    const count = batchBookingCount(batchId, scoped);
+    if (count === 0) {
+      continue;
+    }
+    const expectedSum = batchNetExpected(batchId, scoped);
+    const diff = Math.abs(expectedSum - line.amount);
+    const tolerance = AMOUNT_TOLERANCE * Math.max(1, count);
+    if (diff <= tolerance && (!best || diff < best.diff)) {
+      best = { batchId, diff, count };
+    }
+  }
+
+  if (!best) {
+    return null;
+  }
+
+  return {
+    expectedPayoutBatch: best.batchId,
+    matchReason:
+      best.count > 1
+        ? `Batch ${best.batchId} · ${best.count} prenotazioni (totale Finom)`
+        : `Batch ${best.batchId} · importo singola prenotazione`,
+  };
+}
+
+export function matchBankLineToBooking(
+  line: ParsedBankStatementLine,
+  bookings: Booking[],
+  properties: Property[],
+  bankAccountId: BankAccountId,
+): BankLineMatchResult {
+  const scoped = bookingsForBankAccount(bookings, properties, bankAccountId);
 
   if (line.externalBookingId) {
     const byExternal = scoped.find(
@@ -87,18 +170,25 @@ export function matchBankLineToBooking(
     };
   }
 
+  const batchMatch = tryMatchAggregatedBatch(line, scoped);
+  if (batchMatch) {
+    return batchMatch;
+  }
+
   if (line.otaChannel === "booking") {
     const payoutThursday = formatIsoDate(received);
     return {
       expectedPayoutBatch: `BK-${payoutThursday}`,
-      matchReason: "Bonifico Booking raggruppato per data accredito",
+      matchReason:
+        "Data accredito Booking (batch non verificato — controlla totale atteso)",
     };
   }
 
   if (line.otaChannel === "airbnb") {
     return {
       expectedPayoutBatch: `ABB-${line.receivedDate}`,
-      matchReason: "Bonifico Airbnb per data accredito",
+      matchReason:
+        "Data accredito Airbnb (batch non verificato — controlla totale atteso)",
     };
   }
 

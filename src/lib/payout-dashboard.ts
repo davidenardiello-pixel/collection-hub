@@ -98,6 +98,8 @@ function resolveBookingPayoutStatus(
 
 export function getBookingReceivedFromBank(
   booking: Booking,
+  allBookings: Booking[],
+  properties: Property[],
   bankPayouts: BankPayoutReceived[],
   bankAccountId: BankAccountId,
 ): { amount: number; receivedDate?: string } {
@@ -115,11 +117,66 @@ export function getBookingReceivedFromBank(
 
   const enriched = applyExpectedPayoutFields(booking);
   const netExpected = getBookingNetBankDeposit(booking);
+  const batchId = enriched.expectedPayoutBatch;
+  if (!batchId) {
+    return { amount: 0 };
+  }
+
+  const batchBookings = allBookings
+    .filter(
+      (item) =>
+        getPropertyBankAccount(item.propertyId, properties) === bankAccountId,
+    )
+    .map(applyExpectedPayoutFields)
+    .filter(
+      (item) =>
+        item.expectedPayoutBatch === batchId && isPayoutRelevantBooking(item),
+    );
+
+  const batchNetExpected = roundMoney(
+    batchBookings.reduce(
+      (total, item) => total + getBookingNetBankDeposit(item),
+      0,
+    ),
+  );
+
+  const batchPayouts = bankPayouts.filter(
+    (payout) =>
+      payout.bankAccountId === bankAccountId &&
+      payout.expectedPayoutBatch === batchId,
+  );
+  const receivedBatchTotal = roundMoney(
+    batchPayouts.reduce((total, payout) => total + payout.amount, 0),
+  );
+  const receivedDate = batchPayouts
+    .map((payout) => payout.receivedDate)
+    .sort()
+    .at(-1);
+
+  if (receivedBatchTotal <= 0 || batchNetExpected <= 0) {
+    return { amount: 0 };
+  }
+
+  const batchTolerance =
+    AMOUNT_TOLERANCE * Math.max(1, batchBookings.length);
+
+  if (Math.abs(receivedBatchTotal - batchNetExpected) <= batchTolerance) {
+    return { amount: roundMoney(netExpected), receivedDate };
+  }
+
+  if (receivedBatchTotal < batchNetExpected) {
+    const share = netExpected / batchNetExpected;
+    return {
+      amount: roundMoney(receivedBatchTotal * share),
+      receivedDate,
+    };
+  }
+
   const candidates = bankPayouts.filter(
     (payout) =>
       !payout.matchedBookingId &&
       payout.bankAccountId === bankAccountId &&
-      payout.expectedPayoutBatch === enriched.expectedPayoutBatch &&
+      payout.expectedPayoutBatch === batchId &&
       Math.abs(payout.amount - netExpected) <= AMOUNT_TOLERANCE,
   );
 
@@ -166,7 +223,13 @@ export function buildCompanyPayoutDashboard(
 
       for (const booking of monthBookings) {
         const { amount: receivedAmount, receivedDate } =
-          getBookingReceivedFromBank(booking, bankPayouts, accountId);
+          getBookingReceivedFromBank(
+            booking,
+            bookings,
+            properties,
+            bankPayouts,
+            accountId,
+          );
         const netExpected = getBookingNetBankDeposit(booking);
         const expectedPayoutDate = booking.expectedPayoutDate ?? "";
         const row: BookingPayoutDetailRow = {
