@@ -4,9 +4,7 @@ import { formatCurrency } from "@/lib/calculations";
 import type { IncomeChannelSummary } from "@/lib/bank-accounts";
 import { Card, DataRow, DataTable, Money } from "./ui";
 
-function formatPropertyDetail(
-  items: { name: string; net: number }[],
-): string {
+function formatDetailItems(items: { name: string; net: number }[]): string {
   if (items.length === 0) {
     return "—";
   }
@@ -29,8 +27,15 @@ export function IncomeChannelSummaryCard({
   const activeProperties = summary.properties.filter(
     (property) => property.totalNet > 0 || property.gross > 0,
   );
+  const activePlatforms = summary.platforms.filter(
+    (platform) => platform.totalNet > 0 || platform.gross > 0,
+  );
   const totalPropertyGross = activeProperties.reduce(
     (total, property) => total + property.gross,
+    0,
+  );
+  const totalPlatformGross = activePlatforms.reduce(
+    (total, platform) => total + platform.gross,
     0,
   );
 
@@ -109,7 +114,7 @@ export function IncomeChannelSummaryCard({
                 : "—"}
             </td>
             <td className="px-2 py-2 text-sm text-rc-muted">
-              {formatPropertyDetail(account.properties)}
+              {formatDetailItems(account.properties)}
             </td>
           </DataRow>
         ))}
@@ -126,9 +131,16 @@ export function IncomeChannelSummaryCard({
           <td className="px-2 py-2 font-semibold">
             <Money value={summary.bankNet} />
           </td>
-          <td className="px-2 py-2 text-sm text-rc-muted">OTA e sito</td>
           <td className="px-2 py-2 text-sm text-rc-muted">
-            {formatPropertyDetail(
+            {formatDetailItems(
+              activePlatforms.map((platform) => ({
+                name: platform.name,
+                net: platform.bankNet,
+              })),
+            )}
+          </td>
+          <td className="px-2 py-2 text-sm text-rc-muted">
+            {formatDetailItems(
               activeProperties.map((property) => ({
                 name: property.name,
                 net: property.bankNet,
@@ -150,7 +162,7 @@ export function IncomeChannelSummaryCard({
             </td>
             <td className="px-2 py-2 text-sm text-rc-muted">Diretta</td>
             <td className="px-2 py-2 text-sm text-rc-muted">
-              {formatPropertyDetail(
+              {formatDetailItems(
                 activeProperties
                   .filter((property) => property.cash > 0)
                   .map((property) => ({
@@ -174,7 +186,7 @@ export function IncomeChannelSummaryCard({
           </td>
           <td className="px-2 py-2 text-sm text-rc-muted">Banca + contanti</td>
           <td className="px-2 py-2 text-sm text-rc-muted">
-            {formatPropertyDetail(
+            {formatDetailItems(
               activeProperties.map((property) => ({
                 name: property.name,
                 net: property.totalNet,
@@ -183,6 +195,95 @@ export function IncomeChannelSummaryCard({
           </td>
         </DataRow>
       </DataTable>
+
+      {activePlatforms.length > 0 ? (
+        <div className="mt-8">
+          <p className="mb-3 text-sm font-medium text-rc-gold-light">
+            Suddivisione per OTA (piattaforma)
+          </p>
+          <p className="mb-4 text-sm text-rc-muted">
+            Incassi per canale dopo commissioni. Per ogni OTA vedi anche come si
+            ripartisce tra gli appartamenti nel periodo filtrato.
+          </p>
+          <DataTable
+            headers={[
+              "Piattaforma",
+              "Lordo",
+              "Commissioni",
+              "Netto in banca",
+              "Contanti",
+              "Totale netto",
+              "Dettaglio appartamenti",
+            ]}
+          >
+            {activePlatforms.map((platform) => (
+              <DataRow key={platform.platformId}>
+                <td className="px-2 py-2 font-medium text-rc-ink">
+                  {platform.name}
+                  {platform.isCash ? (
+                    <span className="ml-2 text-xs font-normal text-rc-muted">
+                      (contanti)
+                    </span>
+                  ) : null}
+                </td>
+                <td className="px-2 py-2">
+                  <Money value={platform.gross} />
+                </td>
+                <td className="px-2 py-2">
+                  {platform.commission > 0 ? (
+                    <Money value={platform.commission} />
+                  ) : (
+                    <span className="text-rc-muted">—</span>
+                  )}
+                </td>
+                <td className="px-2 py-2">
+                  {platform.bankNet > 0 ? (
+                    <Money value={platform.bankNet} />
+                  ) : (
+                    <span className="text-rc-muted">—</span>
+                  )}
+                </td>
+                <td className="px-2 py-2">
+                  {platform.cash > 0 ? (
+                    <Money value={platform.cash} />
+                  ) : (
+                    <span className="text-rc-muted">—</span>
+                  )}
+                </td>
+                <td className="px-2 py-2 font-semibold">
+                  <Money value={platform.totalNet} />
+                </td>
+                <td className="px-2 py-2 text-sm text-rc-muted">
+                  {formatDetailItems(platform.properties)}
+                </td>
+              </DataRow>
+            ))}
+            <DataRow>
+              <td className="px-2 py-2 font-semibold text-rc-ink">Totale</td>
+              <td className="px-2 py-2 font-semibold">
+                <Money value={Math.round(totalPlatformGross * 100) / 100} />
+              </td>
+              <td className="px-2 py-2 font-semibold">
+                <Money value={summary.bankCommission} />
+              </td>
+              <td className="px-2 py-2 font-semibold">
+                <Money value={summary.bankNet} />
+              </td>
+              <td className="px-2 py-2 font-semibold">
+                {summary.cashTotal > 0 ? (
+                  <Money value={summary.cashTotal} />
+                ) : (
+                  <span className="text-rc-muted">—</span>
+                )}
+              </td>
+              <td className="px-2 py-2 font-semibold">
+                <Money value={summary.grandNet} />
+              </td>
+              <td className="px-2 py-2 text-sm text-rc-muted">—</td>
+            </DataRow>
+          </DataTable>
+        </div>
+      ) : null}
 
       {activeProperties.length > 0 ? (
         <div className="mt-8">
@@ -203,6 +304,7 @@ export function IncomeChannelSummaryCard({
               "Netto in banca",
               "Contanti",
               "Totale netto",
+              "Dettaglio OTA",
             ]}
           >
             {activeProperties.map((property) => (
@@ -232,6 +334,9 @@ export function IncomeChannelSummaryCard({
                 <td className="px-2 py-2 font-semibold">
                   <Money value={property.totalNet} />
                 </td>
+                <td className="px-2 py-2 text-sm text-rc-muted">
+                  {formatDetailItems(property.platforms)}
+                </td>
               </DataRow>
             ))}
             <DataRow>
@@ -255,6 +360,14 @@ export function IncomeChannelSummaryCard({
               </td>
               <td className="px-2 py-2 font-semibold">
                 <Money value={summary.grandNet} />
+              </td>
+              <td className="px-2 py-2 text-sm text-rc-muted">
+                {formatDetailItems(
+                  activePlatforms.map((platform) => ({
+                    name: platform.name,
+                    net: platform.totalNet,
+                  })),
+                )}
               </td>
             </DataRow>
           </DataTable>

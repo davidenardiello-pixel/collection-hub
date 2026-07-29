@@ -113,11 +113,25 @@ export interface PropertyIncomeChannelRow {
   bankNet: number;
   cash: number;
   totalNet: number;
+  platforms: BankAccountPlatformRow[];
+}
+
+export interface PlatformIncomeChannelRow {
+  platformId: string;
+  name: string;
+  isCash: boolean;
+  gross: number;
+  commission: number;
+  bankNet: number;
+  cash: number;
+  totalNet: number;
+  properties: BankAccountPropertyRow[];
 }
 
 export interface IncomeChannelSummary {
   accounts: BankAccountIncomeRow[];
   properties: PropertyIncomeChannelRow[];
+  platforms: PlatformIncomeChannelRow[];
   bankGross: number;
   bankCommission: number;
   bankNet: number;
@@ -159,6 +173,23 @@ export function getIncomeChannelSummary(
       cash: number;
     }
   >();
+  const propertyPlatformTotals = new Map<
+    string,
+    Map<string, { gross: number; commission: number; net: number }>
+  >();
+  const platformTotals = new Map<
+    string,
+    {
+      gross: number;
+      commission: number;
+      bankNet: number;
+      cash: number;
+      propertyBuckets: Map<
+        string,
+        { gross: number; commission: number; net: number }
+      >;
+    }
+  >();
 
   for (const option of BANK_ACCOUNT_OPTIONS) {
     accountMap.set(option.id, {
@@ -184,6 +215,50 @@ export function getIncomeChannelSummary(
       getBookingBankDeposit(booking) + getBookingCashIncome(booking),
       period,
     );
+    const cashBooking = isCashPlatform(booking.platformId);
+
+    const platformBucket = platformTotals.get(booking.platformId) ?? {
+      gross: 0,
+      commission: 0,
+      bankNet: 0,
+      cash: 0,
+      propertyBuckets: new Map(),
+    };
+    platformBucket.gross += gross;
+    platformBucket.commission += commission;
+    if (cashBooking) {
+      platformBucket.cash += net;
+    } else {
+      platformBucket.bankNet += net;
+    }
+    const platformPropertyBucket = platformBucket.propertyBuckets.get(
+      booking.propertyId,
+    ) ?? {
+      gross: 0,
+      commission: 0,
+      net: 0,
+    };
+    platformPropertyBucket.gross += gross;
+    platformPropertyBucket.commission += commission;
+    platformPropertyBucket.net += net;
+    platformBucket.propertyBuckets.set(
+      booking.propertyId,
+      platformPropertyBucket,
+    );
+    platformTotals.set(booking.platformId, platformBucket);
+
+    const propertyPlatforms =
+      propertyPlatformTotals.get(booking.propertyId) ?? new Map();
+    const propertyPlatformBucket = propertyPlatforms.get(booking.platformId) ?? {
+      gross: 0,
+      commission: 0,
+      net: 0,
+    };
+    propertyPlatformBucket.gross += gross;
+    propertyPlatformBucket.commission += commission;
+    propertyPlatformBucket.net += net;
+    propertyPlatforms.set(booking.platformId, propertyPlatformBucket);
+    propertyPlatformTotals.set(booking.propertyId, propertyPlatforms);
 
     const propertyBucket = propertyTotals.get(booking.propertyId) ?? {
       gross: 0,
@@ -194,7 +269,7 @@ export function getIncomeChannelSummary(
     propertyBucket.gross += gross;
     propertyBucket.commission += commission;
 
-    if (isCashPlatform(booking.platformId)) {
+    if (cashBooking) {
       cashTotal += net;
       propertyBucket.cash += net;
       propertyTotals.set(booking.propertyId, propertyBucket);
@@ -214,15 +289,15 @@ export function getIncomeChannelSummary(
     account.commission += commission;
     account.net += net;
 
-    const platformBucket = account.platforms.get(booking.platformId) ?? {
+    const accountPlatformBucket = account.platforms.get(booking.platformId) ?? {
       gross: 0,
       commission: 0,
       net: 0,
     };
-    platformBucket.gross += gross;
-    platformBucket.commission += commission;
-    platformBucket.net += net;
-    account.platforms.set(booking.platformId, platformBucket);
+    accountPlatformBucket.gross += gross;
+    accountPlatformBucket.commission += commission;
+    accountPlatformBucket.net += net;
+    account.platforms.set(booking.platformId, accountPlatformBucket);
 
     const accountPropertyBucket = account.propertyBuckets.get(
       booking.propertyId,
@@ -274,6 +349,7 @@ export function getIncomeChannelSummary(
       const accountId = getPropertyBankAccount(propertyId, properties);
       const bankNet = Math.round(values.bankNet * 100) / 100;
       const cash = Math.round(values.cash * 100) / 100;
+      const platformBreakdown = propertyPlatformTotals.get(propertyId);
 
       return {
         propertyId,
@@ -285,6 +361,53 @@ export function getIncomeChannelSummary(
         bankNet,
         cash,
         totalNet: Math.round((bankNet + cash) * 100) / 100,
+        platforms: platformBreakdown
+          ? Array.from(platformBreakdown.entries())
+              .map(([id, row]) => ({
+                id,
+                name: platformNames[id] ?? id,
+                gross: Math.round(row.gross * 100) / 100,
+                commission: Math.round(row.commission * 100) / 100,
+                net: Math.round(row.net * 100) / 100,
+              }))
+              .filter((row) => row.gross > 0 || row.net > 0)
+              .sort((left, right) => right.net - left.net)
+          : [],
+      };
+    })
+    .filter(
+      (row) =>
+        row.gross > 0 ||
+        row.bankNet > 0 ||
+        row.cash > 0 ||
+        row.totalNet > 0,
+    )
+    .sort((left, right) => right.totalNet - left.totalNet);
+
+  const platformRows = Array.from(platformTotals.entries())
+    .map(([platformId, values]) => {
+      const bankNet = Math.round(values.bankNet * 100) / 100;
+      const cash = Math.round(values.cash * 100) / 100;
+
+      return {
+        platformId,
+        name: platformNames[platformId] ?? platformId,
+        isCash: isCashPlatform(platformId),
+        gross: Math.round(values.gross * 100) / 100,
+        commission: Math.round(values.commission * 100) / 100,
+        bankNet,
+        cash,
+        totalNet: Math.round((bankNet + cash) * 100) / 100,
+        properties: Array.from(values.propertyBuckets.entries())
+          .map(([id, row]) => ({
+            id,
+            name: propertyNames[id] ?? id,
+            gross: Math.round(row.gross * 100) / 100,
+            commission: Math.round(row.commission * 100) / 100,
+            net: Math.round(row.net * 100) / 100,
+          }))
+          .filter((row) => row.gross > 0 || row.net > 0)
+          .sort((left, right) => right.net - left.net),
       };
     })
     .filter(
@@ -307,6 +430,7 @@ export function getIncomeChannelSummary(
   return {
     accounts,
     properties: propertyRows,
+    platforms: platformRows,
     bankGross: Math.round(bankGross * 100) / 100,
     bankCommission: Math.round(bankCommission * 100) / 100,
     bankNet: Math.round(bankNet * 100) / 100,
