@@ -18,6 +18,7 @@ import {
   bookingPayoutStatusLabel,
   buildCompanyPayoutDashboard,
   buildOtaCollectionOverview,
+  sumBankDepositsByOtaChannel,
 } from "@/lib/payout-dashboard";
 import { convertParsedLinesToPayouts } from "@/lib/bank-reconciliation";
 import { parseBankStatementCsv } from "@/lib/bank-statement-import";
@@ -157,6 +158,15 @@ export function PayoutsView({
       month: selectedMonth,
     });
   }, [activeCompany, bankPayouts, selectedMonth]);
+
+  const bankDepositsInMonth = useMemo(
+    () =>
+      sumBankDepositsByOtaChannel(bankPayouts, selectedCompany, {
+        year: FISCAL_YEAR,
+        month: selectedMonth,
+      }),
+    [bankPayouts, selectedCompany, selectedMonth],
+  );
 
   return (
     <div className="space-y-6">
@@ -392,21 +402,37 @@ export function PayoutsView({
         </Card>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card title="Totale atteso netto (mese)">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Card title="Atteso netto (mese pagamento)">
           <p className="text-2xl font-semibold text-rc-gold-light">
             {formatCurrency(dashboard.netExpected)}
           </p>
           <p className="mt-1 text-xs text-rc-muted">
-            {dashboard.bookingCount} prenotazioni OTA
+            Prenotazioni con pagamento atteso in{" "}
+            {MONTH_LABELS[selectedMonth - 1]} ({dashboard.bookingCount} OTA)
           </p>
         </Card>
-        <Card title="Totale incassato netto (da CSV)">
+        <Card title="Abbinato alle prenotazioni">
           <p className="text-2xl font-semibold text-emerald-400">
             {formatCurrency(dashboard.receivedTotal)}
           </p>
+          <p className="mt-1 text-xs text-rc-muted">
+            Solo il mese del pagamento atteso, non tutto il CSV
+          </p>
         </Card>
-        <Card title="Differenza">
+        <Card title="Accrediti CSV (data in banca)">
+          <p className="text-2xl font-semibold text-rc-ink">
+            {formatCurrency(bankDepositsInMonth.total)}
+          </p>
+          <p className="mt-1 text-xs text-rc-muted">
+            Booking {formatCurrency(bankDepositsInMonth.booking)} · Airbnb{" "}
+            {formatCurrency(bankDepositsInMonth.airbnb)}
+            {bankDepositsInMonth.vrbo > 0
+              ? ` · Vrbo ${formatCurrency(bankDepositsInMonth.vrbo)}`
+              : ""}
+          </p>
+        </Card>
+        <Card title="Gap atteso − abbinato">
           <p
             className={`text-2xl font-semibold ${
               Math.abs(dashboard.difference) <= 0.02
@@ -841,8 +867,16 @@ export function PayoutsView({
                     importInstitution,
                   );
                   setImportPreview(rows);
+                  const bookingTotal = rows
+                    .filter((row) => row.otaChannel === "booking")
+                    .reduce((sum, row) => sum + row.amount, 0);
+                  const airbnbTotal = rows
+                    .filter((row) => row.otaChannel === "airbnb")
+                    .reduce((sum, row) => sum + row.amount, 0);
                   setImportStatus(
-                    `Trovati ${rows.length} accrediti OTA (${parsed.format.toUpperCase()}). Righe ignorate: ${parsed.skippedRows}.`,
+                    `Trovati ${rows.length} accrediti OTA (${parsed.format.toUpperCase()}). ` +
+                      `Booking ${formatCurrency(bookingTotal)} · Airbnb ${formatCurrency(airbnbTotal)}. ` +
+                      `Righe ignorate nel file: ${parsed.skippedRows}.`,
                   );
                 });
               }}

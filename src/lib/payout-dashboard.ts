@@ -391,6 +391,57 @@ function bankPayoutInMonth(
   return y === year && m === month;
 }
 
+/** Canale OTA su bonifico importato (anche se manca su dati vecchi). */
+export function inferBankPayoutOtaChannel(
+  payout: BankPayoutReceived,
+): "airbnb" | "booking" | "vrbo" | "unknown" {
+  if (payout.otaChannel && payout.otaChannel !== "unknown") {
+    return payout.otaChannel;
+  }
+  const text = `${payout.counterparty ?? ""} ${payout.reference ?? ""}`.toUpperCase();
+  if (text.includes("AIRBNB")) {
+    return "airbnb";
+  }
+  if (text.includes("BOOKING")) {
+    return "booking";
+  }
+  if (text.includes("VRBO") || text.includes("HOMEAWAY")) {
+    return "vrbo";
+  }
+  return "unknown";
+}
+
+export function sumBankDepositsByOtaChannel(
+  bankPayouts: BankPayoutReceived[],
+  bankAccountId: BankAccountId,
+  filter: { year: number; month: number },
+): { airbnb: number; booking: number; vrbo: number; total: number } {
+  const sums = { airbnb: 0, booking: 0, vrbo: 0, total: 0 };
+  for (const payout of bankPayouts) {
+    if (payout.bankAccountId !== bankAccountId) {
+      continue;
+    }
+    if (!bankPayoutInMonth(payout.receivedDate, filter.year, filter.month)) {
+      continue;
+    }
+    const channel = inferBankPayoutOtaChannel(payout);
+    sums.total += payout.amount;
+    if (channel === "airbnb") {
+      sums.airbnb += payout.amount;
+    } else if (channel === "booking") {
+      sums.booking += payout.amount;
+    } else if (channel === "vrbo") {
+      sums.vrbo += payout.amount;
+    }
+  }
+  return {
+    airbnb: roundMoney(sums.airbnb),
+    booking: roundMoney(sums.booking),
+    vrbo: roundMoney(sums.vrbo),
+    total: roundMoney(sums.total),
+  };
+}
+
 export interface OtaCollectionOverviewRow {
   platformId: string;
   platformName: string;
@@ -492,9 +543,14 @@ export function buildOtaCollectionOverview(
         .filter(
           (payout) =>
             payout.bankAccountId === company.accountId &&
-            bankPayoutInMonth(payout.receivedDate, filter.year, filter.month) &&
-            (channel ? payout.otaChannel === channel : true),
+            bankPayoutInMonth(payout.receivedDate, filter.year, filter.month),
         )
+        .filter((payout) => {
+          if (!channel) {
+            return true;
+          }
+          return inferBankPayoutOtaChannel(payout) === channel;
+        })
         .reduce((total, payout) => total + payout.amount, 0),
     );
 
