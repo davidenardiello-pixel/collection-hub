@@ -65,19 +65,19 @@ export function PayoutsView({
   properties,
   platforms,
   bankPayouts,
-  onAddBankPayout,
   onRemoveBankPayout,
   onImportBankPayouts,
+  onClearBankPayouts,
 }: {
   bookings: Booking[];
   properties: Property[];
   platforms: Platform[];
   bankPayouts: BankPayoutReceived[];
-  onAddBankPayout: (payout: Omit<BankPayoutReceived, "id">) => void;
   onRemoveBankPayout: (id: string) => void;
   onImportBankPayouts: (
     payouts: Omit<BankPayoutReceived, "id">[],
   ) => { added: number; skipped: number };
+  onClearBankPayouts: () => void;
 }) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
@@ -95,15 +95,6 @@ export function PayoutsView({
     () => getInstitutionsForAccount(importAccountId),
     [importAccountId],
   );
-  const [payoutForm, setPayoutForm] = useState({
-    bankAccountId: BANK_ACCOUNT_OPTIONS[0].id as BankAccountId,
-    bankInstitution: "finom" as BankInstitutionId,
-    receivedDate: formatIsoToday(),
-    amount: "",
-    expectedPayoutBatch: "",
-    reference: "",
-    notes: "",
-  });
 
   const propertyMap = Object.fromEntries(
     properties.map((property) => [property.id, property.name]),
@@ -161,11 +152,10 @@ export function PayoutsView({
       <Card title="Riconciliazione incassi OTA per azienda">
         <p className="mb-4 text-sm text-rc-muted">
           Scegli il <strong className="text-rc-ink">mese del pagamento atteso</strong>.
-          Per ogni <strong className="text-rc-ink">azienda</strong> (HSP, DSEP, D&D)
-          vedi totali, ripartizione <strong className="text-rc-ink">OTA</strong> e
-          ogni <strong className="text-rc-ink">prenotazione</strong> con data bonifico
-          calcolata (Booking dal check-out, Airbnb/Vrbo dal giorno dopo check-in).
-          Carica gli estratti conto CSV in basso per segnare cosa è arrivato.
+          Gli importi <strong className="text-rc-ink">da ricevere</strong> derivano
+          solo dalle prenotazioni già in dashboard (import OTA e incassi). In
+          basso carichi gli <strong className="text-rc-ink">estratti conto CSV</strong>{" "}
+          per abbinare cosa è effettivamente arrivato in banca.
         </p>
         <div className="flex flex-wrap gap-2">
           {MONTH_LABELS.map((label, index) => (
@@ -189,7 +179,7 @@ export function PayoutsView({
             {dashboard.bookingCount} prenotazioni OTA
           </p>
         </Card>
-        <Card title="Totale ricevuto (da CSV / manuale)">
+        <Card title="Totale ricevuto (da CSV)">
           <p className="text-2xl font-semibold text-emerald-400">
             {formatCurrency(dashboard.receivedTotal)}
           </p>
@@ -520,16 +510,38 @@ export function PayoutsView({
         </div>
       </details>
 
-      <Card title="Import estratto conto (Finom / BPER)">
+      <Card title="Carica estratto conto CSV (Finom / BPER)">
         <p className="mb-4 text-sm text-rc-muted">
-          Importa CSV <strong className="text-rc-ink">Finom</strong> o{" "}
-          <strong className="text-rc-ink">BPER</strong>. Indica prima il{" "}
-          <strong className="text-rc-ink">conto dashboard</strong> (HSP / DSEP /
-          D&D) e l&apos;<strong className="text-rc-ink">istituto</strong> del
-          file: DSEP → Finom o BPER; HSP → BPER; D&D → Finom. Vengono importati
-          solo accrediti OTA (Airbnb / Booking); il sistema prova ad abbinare
-          ogni riga alle prenotazioni tramite ID OTA o importo/data.
+          Qui carichi solo ciò che è <strong className="text-rc-ink">arrivato in banca</strong>.
+          Il confronto con quanto <strong className="text-rc-ink">devi ricevere</strong>{" "}
+          è già calcolato sopra dalle prenotazioni. Scegli{" "}
+          <strong className="text-rc-ink">azienda</strong> (HSP / DSEP / D&D) e{" "}
+          <strong className="text-rc-ink">banca del file</strong> (DSEP: Finom o BPER;
+          HSP: BPER; D&D: Finom). Dopo l&apos;import il sistema abbina le righe alle
+          prenotazioni (ID Booking o importo/data).
         </p>
+
+        <div className="mb-4 flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              if (
+                bankPayouts.length === 0 ||
+                window.confirm(
+                  "Rimuovere tutti i bonifici importati dagli estratti conto? Gli importi attesi dalle prenotazioni restano invariati.",
+                )
+              ) {
+                if (bankPayouts.length > 0) {
+                  onClearBankPayouts();
+                  setImportPreview(null);
+                  setImportStatus("Elenco bonifici da CSV svuotato.");
+                }
+              }
+            }}
+          >
+            Svuota bonifici da CSV
+          </Button>
+        </div>
 
         <div className="mb-6 grid gap-3 md:grid-cols-3">
           <label className="text-sm">
@@ -666,141 +678,15 @@ export function PayoutsView({
           </div>
         ) : null}
 
-        <p className="mb-3 text-sm font-medium text-rc-gold-light">
-          Inserimento manuale
+        <p className="mb-3 mt-8 text-sm font-medium text-rc-gold-light">
+          Bonifici importati da CSV
         </p>
-        <form
-          className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const amount = Number(payoutForm.amount.replace(",", "."));
-            if (!Number.isFinite(amount) || amount <= 0) {
-              return;
-            }
-            onAddBankPayout({
-              bankAccountId: payoutForm.bankAccountId,
-              bankInstitution: payoutForm.bankInstitution,
-              receivedDate: payoutForm.receivedDate,
-              amount: Math.round(amount * 100) / 100,
-              expectedPayoutBatch: payoutForm.expectedPayoutBatch.trim() || undefined,
-              reference: payoutForm.reference.trim() || undefined,
-              notes: payoutForm.notes.trim() || undefined,
-              source: "manual",
-            });
-            setPayoutForm((current) => ({
-              ...current,
-              amount: "",
-              expectedPayoutBatch: "",
-              reference: "",
-              notes: "",
-            }));
-          }}
-        >
-          <label className="text-sm">
-            <span className="text-rc-muted">Conto dashboard</span>
-            <select
-              className="mt-1 w-full rounded-lg border border-rc-gold/30 bg-rc-charcoal px-3 py-2"
-              value={payoutForm.bankAccountId}
-              onChange={(event) => {
-                const bankAccountId = event.target.value as BankAccountId;
-                const allowed = getInstitutionsForAccount(bankAccountId);
-                setPayoutForm((current) => ({
-                  ...current,
-                  bankAccountId,
-                  bankInstitution: allowed.includes(current.bankInstitution)
-                    ? current.bankInstitution
-                    : (allowed[0] ?? "finom"),
-                }));
-              }}
-            >
-              {BANK_ACCOUNT_OPTIONS.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm">
-            <span className="text-rc-muted">Banca</span>
-            <select
-              className="mt-1 w-full rounded-lg border border-rc-gold/30 bg-rc-charcoal px-3 py-2"
-              value={payoutForm.bankInstitution}
-              onChange={(event) =>
-                setPayoutForm((current) => ({
-                  ...current,
-                  bankInstitution: event.target.value as BankInstitutionId,
-                }))
-              }
-            >
-              {getInstitutionsForAccount(payoutForm.bankAccountId).map((id) => (
-                <option key={id} value={id}>
-                  {getBankInstitutionLabel(id)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm">
-            <span className="text-rc-muted">Data accredito</span>
-            <input
-              type="date"
-              className="mt-1 w-full rounded-lg border border-rc-gold/30 bg-rc-charcoal px-3 py-2"
-              value={payoutForm.receivedDate}
-              onChange={(event) =>
-                setPayoutForm((current) => ({
-                  ...current,
-                  receivedDate: event.target.value,
-                }))
-              }
-            />
-          </label>
-          <label className="text-sm">
-            <span className="text-rc-muted">Importo €</span>
-            <input
-              className="mt-1 w-full rounded-lg border border-rc-gold/30 bg-rc-charcoal px-3 py-2"
-              value={payoutForm.amount}
-              onChange={(event) =>
-                setPayoutForm((current) => ({
-                  ...current,
-                  amount: event.target.value,
-                }))
-              }
-              placeholder="1234,56"
-            />
-          </label>
-          <label className="text-sm md:col-span-2">
-            <span className="text-rc-muted">Batch ID (opzionale)</span>
-            <input
-              className="mt-1 w-full rounded-lg border border-rc-gold/30 bg-rc-charcoal px-3 py-2 font-mono text-sm"
-              value={payoutForm.expectedPayoutBatch}
-              onChange={(event) =>
-                setPayoutForm((current) => ({
-                  ...current,
-                  expectedPayoutBatch: event.target.value,
-                }))
-              }
-              placeholder="BK-2026-07-09"
-            />
-          </label>
-          <label className="text-sm">
-            <span className="text-rc-muted">Riferimento</span>
-            <input
-              className="mt-1 w-full rounded-lg border border-rc-gold/30 bg-rc-charcoal px-3 py-2"
-              value={payoutForm.reference}
-              onChange={(event) =>
-                setPayoutForm((current) => ({
-                  ...current,
-                  reference: event.target.value,
-                }))
-              }
-            />
-          </label>
-          <div className="flex items-end">
-            <Button type="submit">Registra bonifico</Button>
-          </div>
-        </form>
 
         {bankPayouts.length === 0 ? (
-          <p className="text-sm text-rc-muted">Nessun bonifico registrato.</p>
+          <p className="text-sm text-rc-muted">
+            Nessun estratto conto caricato. Gli importi attesi restano visibili
+            nelle tabelle sopra.
+          </p>
         ) : (
           <DataTable
             headers={[
@@ -830,7 +716,7 @@ export function PayoutsView({
                   {payout.expectedPayoutBatch ?? "—"}
                 </td>
                 <td className="px-2 py-2 text-xs text-rc-muted">
-                  {payout.matchReason ?? (payout.source === "import" ? "Import" : "—")}
+                  {payout.matchReason ?? "—"}
                 </td>
                 <td className="px-2 py-2 text-sm text-rc-muted">
                   {payout.reference ?? "—"}
@@ -893,11 +779,4 @@ function PayoutBatchBookingTable({
       ))}
     </DataTable>
   );
-}
-
-function formatIsoToday(): string {
-  const date = new Date();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
 }

@@ -1096,6 +1096,19 @@ export function useCloudDashboardStorage(enabled: boolean) {
     [persist],
   );
 
+  const clearBankPayouts = useCallback(() => {
+    persist((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        bankPayouts: [],
+      };
+    });
+  }, [persist]);
+
   const importBankPayouts = useCallback(
     (payouts: Omit<BankPayoutReceived, "id">[]) => {
       let added = 0;
@@ -1188,5 +1201,6 @@ export function useCloudDashboardStorage(enabled: boolean) {
     updateBankPayout,
     removeBankPayout,
     importBankPayouts,
+    clearBankPayouts,
   };
 }

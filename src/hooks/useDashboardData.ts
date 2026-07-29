@@ -82,6 +82,7 @@ export function useDashboardData() {
       updateBankPayout: local.updateBankPayout,
       removeBankPayout: local.removeBankPayout,
       importBankPayouts: local.importBankPayouts,
+      clearBankPayouts: local.clearBankPayouts,
     };
   }
 

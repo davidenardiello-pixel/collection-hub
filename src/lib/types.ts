@@ -122,6 +122,8 @@ export interface DashboardData {
   otaImportSnapshots?: OtaImportSnapshot[];
   /** Bonifici registrati (estratto conto / inserimento manuale) per riconciliazione. */
   bankPayouts?: BankPayoutReceived[];
+  /** Incrementato quando cambia il modello riconciliazione (es. reset bonifici importati). */
+  reconciliationDataVersion?: number;
 }
 
 export type ViewId =

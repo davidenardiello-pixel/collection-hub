@@ -177,9 +177,12 @@ function normalizeBankPayout(payout: BankPayoutReceived): BankPayoutReceived {
   return {
     ...payout,
     bankInstitution: payout.bankInstitution ?? "finom",
-    source: payout.source ?? "manual",
+    source: payout.source ?? "import",
   };
 }
+
+/** Bump per reset una tantum dei bonifici importati in passato (solo CSV da ora). */
+const RECONCILIATION_DATA_VERSION = 2;
 
 export function normalizeDashboardData(
   raw: Partial<DashboardData> | null,
@@ -214,6 +217,17 @@ export function normalizeDashboardData(
   const properties = ensureProperties(raw?.properties, bookings, expenses);
   const resyncedBookings = resyncAirbnbOtaBookings(bookings, properties);
 
+  const previousReconciliationVersion = raw?.reconciliationDataVersion ?? 0;
+  const bankPayoutsFromRaw = Array.isArray(raw?.bankPayouts)
+    ? raw.bankPayouts
+    : [];
+  const bankPayouts =
+    previousReconciliationVersion >= RECONCILIATION_DATA_VERSION
+      ? bankPayoutsFromRaw.map((payout) =>
+          normalizeBankPayout(payout as BankPayoutReceived),
+        )
+      : [];
+
   const normalized = {
     bookings: resyncedBookings,
     expenses,
@@ -225,11 +239,8 @@ export function normalizeDashboardData(
     otaImportSnapshots: Array.isArray(raw?.otaImportSnapshots)
       ? raw.otaImportSnapshots
       : [],
-    bankPayouts: Array.isArray(raw?.bankPayouts)
-      ? raw.bankPayouts.map((payout) =>
-          normalizeBankPayout(payout as BankPayoutReceived),
-        )
-      : [],
+    bankPayouts,
+    reconciliationDataVersion: RECONCILIATION_DATA_VERSION,
   };
 
   return pruneStaleRentKrossAutomation(

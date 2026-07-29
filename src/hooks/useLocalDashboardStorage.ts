@@ -884,6 +884,13 @@ export function useLocalDashboardStorage() {
     [persist],
   );
 
+  const clearBankPayouts = useCallback(() => {
+    persist((current) => ({
+      ...current,
+      bankPayouts: [],
+    }));
+  }, [persist]);
+
   const importBankPayouts = useCallback(
     (payouts: Omit<BankPayoutReceived, "id">[]) => {
       let added = 0;
@@ -970,5 +977,6 @@ export function useLocalDashboardStorage() {
     updateBankPayout,
     removeBankPayout,
     importBankPayouts,
+    clearBankPayouts,
   };
 }

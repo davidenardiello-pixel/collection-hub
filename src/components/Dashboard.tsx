@@ -70,9 +70,9 @@ export function Dashboard() {
     importBookingCom,
     importAirbnb,
     bankPayouts,
-    addBankPayout,
-    removeBankPayout,
     importBankPayouts,
+    removeBankPayout,
+    clearBankPayouts,
   } = useDashboardData();
 
   const annual = getAnnualSummary(bookings, expenses, profitTargets);
@@ -246,9 +246,9 @@ export function Dashboard() {
             properties={properties}
             platforms={platforms}
             bankPayouts={bankPayouts}
-            onAddBankPayout={addBankPayout}
-            onRemoveBankPayout={removeBankPayout}
             onImportBankPayouts={importBankPayouts}
+            onRemoveBankPayout={removeBankPayout}
+            onClearBankPayouts={clearBankPayouts}
           />
         ) : null}
 
