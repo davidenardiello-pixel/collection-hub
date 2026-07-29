@@ -190,8 +190,8 @@ function parseBperCsv(
     }
 
     const receivedDate = parseBperDate(cells[3] ?? "");
-    const description = cells[7] ?? "";
-    const amount = parseItalianAmount(cells[8] ?? "");
+    const description = cells[6] ?? "";
+    const amount = parseItalianAmount(cells[7] ?? "");
 
     if (!receivedDate || !Number.isFinite(amount) || amount <= 0) {
       skippedRows += 1;
