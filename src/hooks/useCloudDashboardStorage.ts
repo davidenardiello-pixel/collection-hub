@@ -1096,6 +1096,49 @@ export function useCloudDashboardStorage(enabled: boolean) {
     [persist],
   );
 
+  const importBankPayouts = useCallback(
+    (payouts: Omit<BankPayoutReceived, "id">[]) => {
+      let added = 0;
+      let skipped = 0;
+
+      persist((current) => {
+        if (!current) {
+          return current;
+        }
+
+        const fingerprints = new Set(
+          (current.bankPayouts ?? [])
+            .map((item) => item.importFingerprint)
+            .filter((value): value is string => Boolean(value)),
+        );
+        const toAdd: BankPayoutReceived[] = [];
+
+        for (const payout of payouts) {
+          if (
+            payout.importFingerprint &&
+            fingerprints.has(payout.importFingerprint)
+          ) {
+            skipped += 1;
+            continue;
+          }
+          if (payout.importFingerprint) {
+            fingerprints.add(payout.importFingerprint);
+          }
+          toAdd.push({ ...payout, id: crypto.randomUUID() });
+          added += 1;
+        }
+
+        return {
+          ...current,
+          bankPayouts: [...toAdd, ...(current.bankPayouts ?? [])],
+        };
+      });
+
+      return { added, skipped };
+    },
+    [persist],
+  );
+
   const empty = createSeedData();
 
   return {
@@ -1144,5 +1187,6 @@ export function useCloudDashboardStorage(enabled: boolean) {
     addBankPayout,
     updateBankPayout,
     removeBankPayout,
+    importBankPayouts,
   };
 }

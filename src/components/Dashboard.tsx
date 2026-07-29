@@ -72,6 +72,7 @@ export function Dashboard() {
     bankPayouts,
     addBankPayout,
     removeBankPayout,
+    importBankPayouts,
   } = useDashboardData();
 
   const annual = getAnnualSummary(bookings, expenses, profitTargets);
@@ -247,6 +248,7 @@ export function Dashboard() {
             bankPayouts={bankPayouts}
             onAddBankPayout={addBankPayout}
             onRemoveBankPayout={removeBankPayout}
+            onImportBankPayouts={importBankPayouts}
           />
         ) : null}
 
