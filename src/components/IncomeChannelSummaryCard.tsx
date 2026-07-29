@@ -4,6 +4,18 @@ import { formatCurrency } from "@/lib/calculations";
 import type { IncomeChannelSummary } from "@/lib/bank-accounts";
 import { Card, DataRow, DataTable, Money } from "./ui";
 
+function formatPropertyDetail(
+  items: { name: string; net: number }[],
+): string {
+  if (items.length === 0) {
+    return "—";
+  }
+
+  return items
+    .map((item) => `${item.name} ${formatCurrency(item.net)}`)
+    .join(" · ");
+}
+
 export function IncomeChannelSummaryCard({
   summary,
   subtitle,
@@ -13,6 +25,13 @@ export function IncomeChannelSummaryCard({
 }) {
   const activeAccounts = summary.accounts.filter(
     (account) => account.gross > 0 || account.net > 0,
+  );
+  const activeProperties = summary.properties.filter(
+    (property) => property.totalNet > 0 || property.gross > 0,
+  );
+  const totalPropertyGross = activeProperties.reduce(
+    (total, property) => total + property.gross,
+    0,
   );
 
   return (
@@ -56,7 +75,14 @@ export function IncomeChannelSummaryCard({
       </div>
 
       <DataTable
-        headers={["Conto", "Lordo", "Commissioni", "Netto in banca", "Dettaglio OTA"]}
+        headers={[
+          "Conto",
+          "Lordo",
+          "Commissioni",
+          "Netto in banca",
+          "Dettaglio OTA",
+          "Dettaglio appartamenti",
+        ]}
       >
         {activeAccounts.map((account) => (
           <DataRow key={account.accountId}>
@@ -82,6 +108,9 @@ export function IncomeChannelSummaryCard({
                     .join(" · ")
                 : "—"}
             </td>
+            <td className="px-2 py-2 text-sm text-rc-muted">
+              {formatPropertyDetail(account.properties)}
+            </td>
           </DataRow>
         ))}
         <DataRow>
@@ -98,6 +127,14 @@ export function IncomeChannelSummaryCard({
             <Money value={summary.bankNet} />
           </td>
           <td className="px-2 py-2 text-sm text-rc-muted">OTA e sito</td>
+          <td className="px-2 py-2 text-sm text-rc-muted">
+            {formatPropertyDetail(
+              activeProperties.map((property) => ({
+                name: property.name,
+                net: property.bankNet,
+              })),
+            )}
+          </td>
         </DataRow>
         {summary.cashTotal > 0 ? (
           <DataRow>
@@ -112,6 +149,16 @@ export function IncomeChannelSummaryCard({
               <Money value={summary.cashTotal} />
             </td>
             <td className="px-2 py-2 text-sm text-rc-muted">Diretta</td>
+            <td className="px-2 py-2 text-sm text-rc-muted">
+              {formatPropertyDetail(
+                activeProperties
+                  .filter((property) => property.cash > 0)
+                  .map((property) => ({
+                    name: property.name,
+                    net: property.cash,
+                  })),
+              )}
+            </td>
           </DataRow>
         ) : null}
         <DataRow>
@@ -126,8 +173,93 @@ export function IncomeChannelSummaryCard({
             <Money value={summary.grandNet} />
           </td>
           <td className="px-2 py-2 text-sm text-rc-muted">Banca + contanti</td>
+          <td className="px-2 py-2 text-sm text-rc-muted">
+            {formatPropertyDetail(
+              activeProperties.map((property) => ({
+                name: property.name,
+                net: property.totalNet,
+              })),
+            )}
+          </td>
         </DataRow>
       </DataTable>
+
+      {activeProperties.length > 0 ? (
+        <div className="mt-8">
+          <p className="mb-3 text-sm font-medium text-rc-gold-light">
+            Suddivisione per appartamento
+          </p>
+          <p className="mb-4 text-sm text-rc-muted">
+            Quota di ogni unità sul totale netto (banca dopo commissioni +
+            contanti). Il conto è quello impostato in Impostazioni per
+            l&apos;appartamento.
+          </p>
+          <DataTable
+            headers={[
+              "Appartamento",
+              "Conto accredito",
+              "Lordo",
+              "Commissioni",
+              "Netto in banca",
+              "Contanti",
+              "Totale netto",
+            ]}
+          >
+            {activeProperties.map((property) => (
+              <DataRow key={property.propertyId}>
+                <td className="px-2 py-2 font-medium text-rc-ink">
+                  {property.name}
+                </td>
+                <td className="px-2 py-2 text-sm text-rc-muted">
+                  {property.accountLabel}
+                </td>
+                <td className="px-2 py-2">
+                  <Money value={property.gross} />
+                </td>
+                <td className="px-2 py-2">
+                  <Money value={property.commission} />
+                </td>
+                <td className="px-2 py-2">
+                  <Money value={property.bankNet} />
+                </td>
+                <td className="px-2 py-2">
+                  {property.cash > 0 ? (
+                    <Money value={property.cash} />
+                  ) : (
+                    <span className="text-rc-muted">—</span>
+                  )}
+                </td>
+                <td className="px-2 py-2 font-semibold">
+                  <Money value={property.totalNet} />
+                </td>
+              </DataRow>
+            ))}
+            <DataRow>
+              <td className="px-2 py-2 font-semibold text-rc-ink">Totale</td>
+              <td className="px-2 py-2 text-sm text-rc-muted">—</td>
+              <td className="px-2 py-2 font-semibold">
+                <Money value={Math.round(totalPropertyGross * 100) / 100} />
+              </td>
+              <td className="px-2 py-2 font-semibold">
+                <Money value={summary.bankCommission} />
+              </td>
+              <td className="px-2 py-2 font-semibold">
+                <Money value={summary.bankNet} />
+              </td>
+              <td className="px-2 py-2 font-semibold">
+                {summary.cashTotal > 0 ? (
+                  <Money value={summary.cashTotal} />
+                ) : (
+                  <span className="text-rc-muted">—</span>
+                )}
+              </td>
+              <td className="px-2 py-2 font-semibold">
+                <Money value={summary.grandNet} />
+              </td>
+            </DataRow>
+          </DataTable>
+        </div>
+      ) : null}
     </Card>
   );
 }
