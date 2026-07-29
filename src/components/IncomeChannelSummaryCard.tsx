@@ -42,10 +42,10 @@ export function IncomeChannelSummaryCard({
   return (
     <Card
       title="Accrediti per conto e contanti"
-      subtitle={
-        subtitle ??
-        "Netto in banca dopo commissioni OTA. La piattaforma Diretta è contanti."
-      }
+        subtitle={
+          subtitle ??
+          "Netto in banca dopo commissioni OTA. Incassi OTA: mese di check-in (allineato agli sheet)."
+        }
     >
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-lg border border-rc-gold/20 bg-rc-charcoal/40 p-3">

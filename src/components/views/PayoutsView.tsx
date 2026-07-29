@@ -21,6 +21,7 @@ import {
   sumBankDepositsByOtaChannel,
 } from "@/lib/payout-dashboard";
 import { convertParsedLinesToPayouts } from "@/lib/bank-reconciliation";
+import { buildAccountCompetenceVsPayoutBridge } from "@/lib/income-payout-bridge";
 import { parseBankStatementCsv } from "@/lib/bank-statement-import";
 import {
   getBankInstitutionLabel,
@@ -168,6 +169,26 @@ export function PayoutsView({
     [bankPayouts, selectedCompany, selectedMonth],
   );
 
+  const competenceBridge = useMemo(
+    () =>
+      buildAccountCompetenceVsPayoutBridge(
+        selectedCompany,
+        bookings,
+        properties,
+        platforms,
+        bankPayouts,
+        { year: FISCAL_YEAR, month: selectedMonth },
+      ),
+    [
+      bankPayouts,
+      bookings,
+      platforms,
+      properties,
+      selectedCompany,
+      selectedMonth,
+    ],
+  );
+
   return (
     <div className="space-y-6">
       <Card title="Riconciliazione incassi OTA per azienda">
@@ -202,7 +223,89 @@ export function PayoutsView({
             </TabPill>
           ))}
         </div>
-        </Card>
+      </Card>
+
+      <Card
+        title={`Competenza (Incassi) vs cassa (bonifici) — ${competenceBridge.label}`}
+        subtitle={`${MONTH_LABELS[selectedMonth - 1]} ${FISCAL_YEAR}: stesso mese calendario, due regole diverse`}
+      >
+        <p className="mb-4 text-sm text-rc-muted">
+          <strong className="text-rc-ink">Competenza</strong> = come in tab Incassi
+          (check-in nel mese, netto dopo commissioni OTA).{" "}
+          <strong className="text-rc-ink">Bonifico atteso</strong> = quando l&apos;OTA
+          dovrebbe pagare in banca (Booking giovedì post check-out, Airbnb giorno
+          lavorativo post check-in).{" "}
+          <strong className="text-rc-ink">CSV</strong> = data accredito sul conto.
+          È normale che competenza luglio e bonifici luglio non coincidano.
+        </p>
+        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg border border-rc-gold/25 bg-rc-charcoal/30 p-3">
+            <p className="text-xs uppercase text-rc-muted">Competenza netta</p>
+            <p className="text-lg font-semibold text-rc-gold-light">
+              {formatCurrency(competenceBridge.competenceNet)}
+            </p>
+            <p className="mt-1 text-xs text-rc-muted">
+              Lordo {formatCurrency(competenceBridge.competenceGross)} · comm.{" "}
+              {formatCurrency(competenceBridge.competenceCommission)}
+            </p>
+          </div>
+          <div className="rounded-lg border border-rc-gold/25 bg-rc-charcoal/30 p-3">
+            <p className="text-xs uppercase text-rc-muted">Bonifico atteso (OTA)</p>
+            <p className="text-lg font-semibold text-rc-ink">
+              {formatCurrency(competenceBridge.payoutExpectedNet)}
+            </p>
+          </div>
+          <div className="rounded-lg border border-emerald-500/30 bg-rc-charcoal/30 p-3">
+            <p className="text-xs uppercase text-rc-muted">Abbinato a prenotazioni</p>
+            <p className="text-lg font-semibold text-emerald-400">
+              {formatCurrency(competenceBridge.payoutAttributedNet)}
+            </p>
+          </div>
+          <div className="rounded-lg border border-rc-gold/25 bg-rc-charcoal/30 p-3">
+            <p className="text-xs uppercase text-rc-muted">Accrediti CSV (mese)</p>
+            <p className="text-lg font-semibold text-rc-ink">
+              {formatCurrency(competenceBridge.bankCsvTotal)}
+            </p>
+            <p className="mt-1 text-xs text-rc-muted">
+              Booking {formatCurrency(competenceBridge.bankCsvBooking)} · Airbnb{" "}
+              {formatCurrency(competenceBridge.bankCsvAirbnb)}
+            </p>
+          </div>
+        </div>
+        {competenceBridge.otaRows.length === 0 ? (
+          <p className="text-sm text-rc-muted">
+            Nessun dato OTA per {competenceBridge.label} in questo mese.
+          </p>
+        ) : (
+          <DataTable
+            headers={[
+              "OTA",
+              "Competenza (check-in)",
+              "Bonifico atteso",
+              "Abbinato",
+              "Gap competenza − atteso",
+            ]}
+          >
+            {competenceBridge.otaRows.map((row) => (
+              <DataRow key={row.platformId}>
+                <td className="px-2 py-2 font-medium">{row.platformName}</td>
+                <td className="px-2 py-2">
+                  <Money value={row.competenceNet} />
+                </td>
+                <td className="px-2 py-2">
+                  <Money value={row.payoutExpectedNet} />
+                </td>
+                <td className="px-2 py-2">
+                  <Money value={row.payoutAttributedNet} />
+                </td>
+                <td className="px-2 py-2 text-sm text-rc-muted">
+                  <Money value={row.competenceNet - row.payoutExpectedNet} />
+                </td>
+              </DataRow>
+            ))}
+          </DataTable>
+        )}
+      </Card>
 
       {activeCompany && otaOverview ? (
         <Card

@@ -187,9 +187,11 @@ export function IncomeView({
           </span>
           {monthFilterActive ? (
             <span className="block mt-2 text-xs">
-              Stessa logica della tabella sotto: importi ripartiti per{" "}
-              <strong className="text-rc-ink">notti nel mese</strong> (non per
-              data bonifico OTA — vedi Riconciliazione OTA).
+              Stessa logica della tabella sotto: importi nel{" "}
+              <strong className="text-rc-ink">mese di check-in</strong> (come sheet
+              OTA). I bonifici in banca seguono altre date → vedi{" "}
+              <strong className="text-rc-ink">Riconciliazione OTA</strong> (
+              confronto Competenza vs cassa).
             </span>
           ) : null}
           {channelSummary.cashTotal > 0 ? (
@@ -222,7 +224,7 @@ export function IncomeView({
         summary={channelSummary}
         subtitle={
           monthFilterActive && monthLabel
-            ? `Quota ${monthLabel} ${FISCAL_YEAR} (pernotti nel mese · netto = lordo − commissioni OTA)${
+            ? `Quota ${monthLabel} ${FISCAL_YEAR} (mese check-in · netto = lordo − commissioni OTA)${
                 activeFilterLabels.length > 0
                   ? ` · ${activeFilterLabels.join(" · ")}`
                   : ""
