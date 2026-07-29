@@ -15,8 +15,15 @@ import {
   type PayoutBatchStatus,
 } from "@/lib/ota-payout";
 import { getPropertyCityLabel, normalizePropertyCity } from "@/lib/property-cities";
+import { convertParsedLinesToPayouts } from "@/lib/bank-reconciliation";
+import { parseBankStatementCsv } from "@/lib/bank-statement-import";
+import {
+  getBankInstitutionLabel,
+  getInstitutionsForAccount,
+} from "@/lib/bank-ledger";
 import type {
   BankAccountId,
+  BankInstitutionId,
   BankPayoutReceived,
   Booking,
   Platform,
@@ -57,6 +64,7 @@ export function PayoutsView({
   bankPayouts,
   onAddBankPayout,
   onRemoveBankPayout,
+  onImportBankPayouts,
 }: {
   bookings: Booking[];
   properties: Property[];
@@ -64,12 +72,27 @@ export function PayoutsView({
   bankPayouts: BankPayoutReceived[];
   onAddBankPayout: (payout: Omit<BankPayoutReceived, "id">) => void;
   onRemoveBankPayout: (id: string) => void;
+  onImportBankPayouts: (
+    payouts: Omit<BankPayoutReceived, "id">[],
+  ) => { added: number; skipped: number };
 }) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [expandedBatch, setExpandedBatch] = useState<string | null>(null);
+  const [importAccountId, setImportAccountId] = useState<BankAccountId>("dsep");
+  const [importInstitution, setImportInstitution] =
+    useState<BankInstitutionId>("finom");
+  const [importPreview, setImportPreview] = useState<
+    Omit<BankPayoutReceived, "id">[] | null
+  >(null);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const institutionOptions = useMemo(
+    () => getInstitutionsForAccount(importAccountId),
+    [importAccountId],
+  );
   const [payoutForm, setPayoutForm] = useState({
     bankAccountId: BANK_ACCOUNT_OPTIONS[0].id as BankAccountId,
+    bankInstitution: "finom" as BankInstitutionId,
     receivedDate: formatIsoToday(),
     amount: "",
     expectedPayoutBatch: "",
@@ -329,10 +352,152 @@ export function PayoutsView({
 
       <Card title="Bonifici ricevuti (estratto conto)">
         <p className="mb-4 text-sm text-rc-muted">
-          Inserisci i bonifici arrivati sul conto. Collega il{" "}
-          <strong className="text-rc-ink">Batch ID</strong> (es.{" "}
-          <code className="text-rc-gold-light">BK-2026-07-09</code>) per
-          riconciliare automaticamente con le prenotazioni attese.
+          Importa CSV <strong className="text-rc-ink">Finom</strong> o{" "}
+          <strong className="text-rc-ink">BPER</strong>. Indica prima il{" "}
+          <strong className="text-rc-ink">conto dashboard</strong> (HSP / DSEP /
+          D&D) e l&apos;<strong className="text-rc-ink">istituto</strong> del
+          file: DSEP → Finom o BPER; HSP → BPER; D&D → Finom. Vengono importati
+          solo accrediti OTA (Airbnb / Booking); il sistema prova ad abbinare
+          ogni riga alle prenotazioni tramite ID OTA o importo/data.
+        </p>
+
+        <div className="mb-6 grid gap-3 md:grid-cols-3">
+          <label className="text-sm">
+            <span className="text-rc-muted">Conto dashboard</span>
+            <select
+              className="mt-1 w-full rounded-lg border border-rc-gold/30 bg-rc-charcoal px-3 py-2"
+              value={importAccountId}
+              onChange={(event) => {
+                const bankAccountId = event.target.value as BankAccountId;
+                const allowed = getInstitutionsForAccount(bankAccountId);
+                setImportAccountId(bankAccountId);
+                setImportInstitution(allowed[0] ?? "finom");
+                setImportPreview(null);
+                setImportStatus(null);
+              }}
+            >
+              {BANK_ACCOUNT_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm">
+            <span className="text-rc-muted">Banca del file CSV</span>
+            <select
+              className="mt-1 w-full rounded-lg border border-rc-gold/30 bg-rc-charcoal px-3 py-2"
+              value={importInstitution}
+              onChange={(event) => {
+                setImportInstitution(event.target.value as BankInstitutionId);
+                setImportPreview(null);
+                setImportStatus(null);
+              }}
+            >
+              {institutionOptions.map((id) => (
+                <option key={id} value={id}>
+                  {getBankInstitutionLabel(id)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col justify-end text-sm">
+            <span className="text-rc-muted">File estratto conto</span>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              className="mt-1 w-full text-sm text-rc-muted file:mr-3 file:rounded-lg file:border-0 file:bg-rc-gold/20 file:px-3 file:py-2 file:text-rc-ink"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (!file) {
+                  return;
+                }
+                void file.text().then((text) => {
+                  const parsed = parseBankStatementCsv(text, {
+                    bankAccountId: importAccountId,
+                    bankInstitution: importInstitution,
+                  });
+                  if (parsed.lines.length === 0) {
+                    setImportPreview(null);
+                    setImportStatus(
+                      "Nessun accredito OTA riconosciuto nel file. Controlla formato Finom/BPER e conto selezionato.",
+                    );
+                    return;
+                  }
+                  const rows = convertParsedLinesToPayouts(
+                    parsed.lines,
+                    bookings,
+                    properties,
+                    importAccountId,
+                    importInstitution,
+                  );
+                  setImportPreview(rows);
+                  setImportStatus(
+                    `Trovati ${rows.length} accrediti OTA (${parsed.format.toUpperCase()}). Righe ignorate: ${parsed.skippedRows}.`,
+                  );
+                });
+              }}
+            />
+          </label>
+        </div>
+
+        {importStatus ? (
+          <p className="mb-4 text-sm text-rc-muted">{importStatus}</p>
+        ) : null}
+
+        {importPreview && importPreview.length > 0 ? (
+          <div className="mb-6 space-y-3">
+            <DataTable
+              headers={[
+                "Data",
+                "Importo",
+                "Canale",
+                "Batch",
+                "Match",
+              ]}
+            >
+              {importPreview.slice(0, 12).map((row, index) => (
+                <DataRow key={`${row.importFingerprint ?? index}`}>
+                  <td className="px-2 py-2 text-sm">
+                    {formatDate(row.receivedDate)}
+                  </td>
+                  <td className="px-2 py-2">
+                    <Money value={row.amount} />
+                  </td>
+                  <td className="px-2 py-2 text-sm uppercase text-rc-muted">
+                    {row.otaChannel ?? "—"}
+                  </td>
+                  <td className="px-2 py-2 font-mono text-xs">
+                    {row.expectedPayoutBatch ?? "—"}
+                  </td>
+                  <td className="px-2 py-2 text-xs text-rc-muted">
+                    {row.matchReason ?? "—"}
+                  </td>
+                </DataRow>
+              ))}
+            </DataTable>
+            {importPreview.length > 12 ? (
+              <p className="text-xs text-rc-muted">
+                Anteprima: prime 12 righe su {importPreview.length}.
+              </p>
+            ) : null}
+            <Button
+              onClick={() => {
+                const result = onImportBankPayouts(importPreview);
+                setImportPreview(null);
+                setImportStatus(
+                  `Import completato: ${result.added} aggiunti, ${result.skipped} duplicati ignorati.`,
+                );
+              }}
+            >
+              Conferma import ({importPreview.length} righe)
+            </Button>
+          </div>
+        ) : null}
+
+        <p className="mb-3 text-sm font-medium text-rc-gold-light">
+          Inserimento manuale
         </p>
         <form
           className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3"
@@ -344,11 +509,13 @@ export function PayoutsView({
             }
             onAddBankPayout({
               bankAccountId: payoutForm.bankAccountId,
+              bankInstitution: payoutForm.bankInstitution,
               receivedDate: payoutForm.receivedDate,
               amount: Math.round(amount * 100) / 100,
               expectedPayoutBatch: payoutForm.expectedPayoutBatch.trim() || undefined,
               reference: payoutForm.reference.trim() || undefined,
               notes: payoutForm.notes.trim() || undefined,
+              source: "manual",
             });
             setPayoutForm((current) => ({
               ...current,
@@ -360,20 +527,44 @@ export function PayoutsView({
           }}
         >
           <label className="text-sm">
-            <span className="text-rc-muted">Conto</span>
+            <span className="text-rc-muted">Conto dashboard</span>
             <select
               className="mt-1 w-full rounded-lg border border-rc-gold/30 bg-rc-charcoal px-3 py-2"
               value={payoutForm.bankAccountId}
-              onChange={(event) =>
+              onChange={(event) => {
+                const bankAccountId = event.target.value as BankAccountId;
+                const allowed = getInstitutionsForAccount(bankAccountId);
                 setPayoutForm((current) => ({
                   ...current,
-                  bankAccountId: event.target.value as BankAccountId,
-                }))
-              }
+                  bankAccountId,
+                  bankInstitution: allowed.includes(current.bankInstitution)
+                    ? current.bankInstitution
+                    : (allowed[0] ?? "finom"),
+                }));
+              }}
             >
               {BANK_ACCOUNT_OPTIONS.map((option) => (
                 <option key={option.id} value={option.id}>
                   {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm">
+            <span className="text-rc-muted">Banca</span>
+            <select
+              className="mt-1 w-full rounded-lg border border-rc-gold/30 bg-rc-charcoal px-3 py-2"
+              value={payoutForm.bankInstitution}
+              onChange={(event) =>
+                setPayoutForm((current) => ({
+                  ...current,
+                  bankInstitution: event.target.value as BankInstitutionId,
+                }))
+              }
+            >
+              {getInstitutionsForAccount(payoutForm.bankAccountId).map((id) => (
+                <option key={id} value={id}>
+                  {getBankInstitutionLabel(id)}
                 </option>
               ))}
             </select>
@@ -445,8 +636,10 @@ export function PayoutsView({
             headers={[
               "Data",
               "Conto",
+              "Banca",
               "Importo",
               "Batch collegato",
+              "Match",
               "Riferimento",
               "",
             ]}
@@ -457,11 +650,17 @@ export function PayoutsView({
                 <td className="px-2 py-2 text-sm">
                   {getBankAccountLabel(payout.bankAccountId)}
                 </td>
+                <td className="px-2 py-2 text-sm">
+                  {getBankInstitutionLabel(payout.bankInstitution)}
+                </td>
                 <td className="px-2 py-2 font-medium">
                   <Money value={payout.amount} />
                 </td>
                 <td className="px-2 py-2 font-mono text-xs text-rc-muted">
                   {payout.expectedPayoutBatch ?? "—"}
+                </td>
+                <td className="px-2 py-2 text-xs text-rc-muted">
+                  {payout.matchReason ?? (payout.source === "import" ? "Import" : "—")}
                 </td>
                 <td className="px-2 py-2 text-sm text-rc-muted">
                   {payout.reference ?? "—"}

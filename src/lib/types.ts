@@ -1,5 +1,7 @@
 export type BankAccountId = "hsp" | "dsep" | "dd";
 
+export type BankInstitutionId = "finom" | "bper";
+
 export type PropertyCityId = "roma" | "napoli";
 
 export interface Property {
@@ -94,10 +96,17 @@ export interface OtaImportSnapshot {
 export interface BankPayoutReceived {
   id: string;
   bankAccountId: BankAccountId;
+  bankInstitution: BankInstitutionId;
   receivedDate: string;
   amount: number;
   reference?: string;
+  counterparty?: string;
   expectedPayoutBatch?: string;
+  matchedBookingId?: string;
+  matchReason?: string;
+  otaChannel?: "airbnb" | "booking" | "vrbo" | "unknown";
+  source: "manual" | "import";
+  importFingerprint?: string;
   notes?: string;
 }
 

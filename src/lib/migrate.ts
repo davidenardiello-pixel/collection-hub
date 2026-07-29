@@ -30,6 +30,7 @@ import { applyExpectedPayoutFields } from "./ota-payout";
 import { normalizePropertyCity } from "./property-cities";
 import type {
   AutomationSettings,
+  BankPayoutReceived,
   Booking,
   DashboardData,
   Expense,
@@ -172,6 +173,14 @@ function ensureCategories(
   return catalog;
 }
 
+function normalizeBankPayout(payout: BankPayoutReceived): BankPayoutReceived {
+  return {
+    ...payout,
+    bankInstitution: payout.bankInstitution ?? "finom",
+    source: payout.source ?? "manual",
+  };
+}
+
 export function normalizeDashboardData(
   raw: Partial<DashboardData> | null,
 ): DashboardData {
@@ -216,7 +225,11 @@ export function normalizeDashboardData(
     otaImportSnapshots: Array.isArray(raw?.otaImportSnapshots)
       ? raw.otaImportSnapshots
       : [],
-    bankPayouts: Array.isArray(raw?.bankPayouts) ? raw.bankPayouts : [],
+    bankPayouts: Array.isArray(raw?.bankPayouts)
+      ? raw.bankPayouts.map((payout) =>
+          normalizeBankPayout(payout as BankPayoutReceived),
+        )
+      : [],
   };
 
   return pruneStaleRentKrossAutomation(
