@@ -8,6 +8,7 @@ import {
 } from "@/lib/automation";
 import { resyncPropertyBookingCleaningExpenses } from "@/lib/booking-cleaning";
 import { normalizeBookingCommission } from "@/lib/booking-commission";
+import { applyExpectedPayoutFields } from "@/lib/ota-payout";
 import {
   removeAllBookingLinkedExpenses,
   upsertAllBookingLinkedExpenses,
@@ -21,7 +22,11 @@ import {
   MAX_PLATFORMS,
   MAX_PROPERTIES,
 } from "@/lib/constants";
-import type { BankAccountId, PropertyCityId } from "@/lib/types";
+import type {
+  BankAccountId,
+  BankPayoutReceived,
+  PropertyCityId,
+} from "@/lib/types";
 import { createUniqueId, normalizeDashboardData } from "@/lib/migrate";
 import { removePropertyFromDashboard } from "@/lib/property-removal";
 import {
@@ -266,7 +271,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
         }
 
         const id = crypto.randomUUID();
-        const saved = {
+        const saved = applyExpectedPayoutFields({
           ...normalizeBookingCommission({
             ...booking,
             id,
@@ -274,7 +279,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
             importedFromExcel: false,
           }),
           id,
-        };
+        });
 
         return refreshAutomatedCleaningExpenses({
           ...current,
@@ -302,7 +307,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
         const existing = current.bookings.find((item) => item.id === id);
         const importedFromExcel =
           existing?.importedFromExcel ?? booking.importedFromExcel ?? false;
-        const saved = {
+        const saved = applyExpectedPayoutFields({
           ...normalizeBookingCommission({
             ...booking,
             id,
@@ -314,7 +319,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
                 false),
           }),
           id,
-        };
+        });
 
         return refreshAutomatedCleaningExpenses({
           ...current,
@@ -1036,6 +1041,61 @@ export function useCloudDashboardStorage(enabled: boolean) {
     [persist],
   );
 
+  const addBankPayout = useCallback(
+    (payout: Omit<BankPayoutReceived, "id">) => {
+      persist((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          bankPayouts: [
+            { ...payout, id: crypto.randomUUID() },
+            ...(current.bankPayouts ?? []),
+          ],
+        };
+      });
+    },
+    [persist],
+  );
+
+  const updateBankPayout = useCallback(
+    (id: string, payout: Omit<BankPayoutReceived, "id">) => {
+      persist((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          bankPayouts: (current.bankPayouts ?? []).map((item) =>
+            item.id === id ? { ...payout, id } : item,
+          ),
+        };
+      });
+    },
+    [persist],
+  );
+
+  const removeBankPayout = useCallback(
+    (id: string) => {
+      persist((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          bankPayouts: (current.bankPayouts ?? []).filter(
+            (item) => item.id !== id,
+          ),
+        };
+      });
+    },
+    [persist],
+  );
+
   const empty = createSeedData();
 
   return {
@@ -1052,6 +1112,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
     expenseCategories: data?.expenseCategories ?? empty.expenseCategories,
     profitTargets: data?.profitTargets ?? empty.profitTargets,
     automation: data?.automation ?? empty.automation,
+    bankPayouts: data?.bankPayouts ?? empty.bankPayouts ?? [],
     addBooking,
     updateBooking,
     duplicateBooking,
@@ -1080,5 +1141,8 @@ export function useCloudDashboardStorage(enabled: boolean) {
     resetToSeed,
     clearAll,
     clearTransactions,
+    addBankPayout,
+    updateBankPayout,
+    removeBankPayout,
   };
 }

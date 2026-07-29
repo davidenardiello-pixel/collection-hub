@@ -14,11 +14,13 @@ import { IncomeView } from "./views/IncomeView";
 import { MonthlyView } from "./views/MonthlyView";
 import { OverviewView } from "./views/OverviewView";
 import { PropertyView } from "./views/PropertyView";
+import { PayoutsView } from "./views/PayoutsView";
 import { SettingsView } from "./views/SettingsView";
 
 const TABS: { id: ViewId; label: string }[] = [
   { id: "overview", label: "Panoramica" },
   { id: "income", label: "Incassi" },
+  { id: "payouts", label: "Incassi OTA" },
   { id: "expenses", label: "Spese" },
   { id: "monthly", label: "Mensile" },
   { id: "property", label: "Proprietà" },
@@ -67,6 +69,9 @@ export function Dashboard() {
     syncAutomation,
     importBookingCom,
     importAirbnb,
+    bankPayouts,
+    addBankPayout,
+    removeBankPayout,
   } = useDashboardData();
 
   const annual = getAnnualSummary(bookings, expenses, profitTargets);
@@ -231,6 +236,17 @@ export function Dashboard() {
             onDuplicate={duplicateBooking}
             onRemove={removeBooking}
             onClearTransactions={clearTransactions}
+          />
+        ) : null}
+
+        {view === "payouts" ? (
+          <PayoutsView
+            bookings={bookings}
+            properties={properties}
+            platforms={platforms}
+            bankPayouts={bankPayouts}
+            onAddBankPayout={addBankPayout}
+            onRemoveBankPayout={removeBankPayout}
           />
         ) : null}
 
