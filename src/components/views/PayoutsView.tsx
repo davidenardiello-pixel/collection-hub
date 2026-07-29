@@ -283,6 +283,70 @@ export function PayoutsView({
 
   return (
     <div className="space-y-6">
+      <Card
+        title="CSV contabilità Booking.com"
+        subtitle="Collega i bonifici NO.xxx alle prenotazioni in dashboard"
+      >
+        <p className="mb-4 text-sm text-rc-muted">
+          Carica <strong className="text-rc-ink">statements</strong> (es. Porto
+          Fluviale, Mistangelo…) e/o <strong className="text-rc-ink">payout</strong>{" "}
+          export globale. Poi, più sotto, carica l&apos;estratto Finom/BPER. Se non
+          vedi questa sezione, stai usando un link vecchio: apri l&apos;app dal deploy
+          Vercel del progetto GitHub <em>collection-hub</em> (tab{" "}
+          <strong className="text-rc-ink">Riconciliazione OTA</strong>, non la vecchia
+          app Vite su collection-hub.vercel.app).
+        </p>
+        <label className="flex flex-col text-sm">
+          <span className="text-rc-muted">
+            File CSV (uno o più) — statements o payout
+          </span>
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            multiple
+            className="mt-1 w-full text-sm text-rc-muted file:mr-3 file:rounded-lg file:border-0 file:bg-rc-gold/20 file:px-3 file:py-2 file:text-rc-ink"
+            onChange={(event) => {
+              const files = event.target.files;
+              event.target.value = "";
+              if (!files || files.length === 0) {
+                return;
+              }
+              void Promise.all([...files].map((file) => file.text())).then(
+                (texts) => {
+                  const indexes = texts.map((text) =>
+                    parseBookingAccountingCsv(text),
+                  );
+                  const merged = mergeBookingAccountingIndexes(...indexes);
+                  setAccountingIndex(merged);
+                  const names = [...files].map((file) => file.name).join(", ");
+                  setAccountingFileLabel(names);
+                  const reservations = merged.byReservationId.size;
+                  const known = filterAccountingIndexToKnownReservations(
+                    merged,
+                    bookingReservationIds,
+                  ).byReservationId.size;
+                  setImportStatus(
+                    `Contabilità Booking caricata (${names}): ${reservations} prenotazioni nel file, ${known} già in dashboard. ` +
+                      `Carica l'estratto conto sotto per il match.`,
+                  );
+                  if (pendingBankLines) {
+                    rebuildBankImportPreview(pendingBankLines);
+                  }
+                },
+              );
+            }}
+          />
+        </label>
+        {accountingFileLabel ? (
+          <p className="mt-3 text-sm text-emerald-400">
+            File attivi: {accountingFileLabel} · batch noti in dashboard:{" "}
+            {filteredAccountingIndex.byBatchRef.size}
+          </p>
+        ) : (
+          <p className="mt-3 text-sm text-rc-muted">Nessun file contabilità caricato.</p>
+        )}
+      </Card>
+
       <Card title="Riconciliazione incassi OTA per azienda">
         <p className="mb-4 text-sm text-rc-muted">
           Mese del <strong className="text-rc-ink">pagamento atteso in banca</strong>{" "}
@@ -994,43 +1058,6 @@ export function PayoutsView({
           >
             Svuota bonifici da CSV
           </Button>
-        </div>
-
-        <div className="mb-6 grid gap-3 md:grid-cols-2">
-          <label className="flex flex-col justify-end text-sm md:col-span-2">
-            <span className="text-rc-muted">
-              CSV contabilità Booking (statements o payout) — opzionale, uno o più file
-            </span>
-            <input
-              type="file"
-              accept=".csv,text/csv"
-              multiple
-              className="mt-1 w-full text-sm text-rc-muted file:mr-3 file:rounded-lg file:border-0 file:bg-rc-gold/20 file:px-3 file:py-2 file:text-rc-ink"
-              onChange={(event) => {
-                const files = event.target.files;
-                event.target.value = "";
-                if (!files || files.length === 0) {
-                  return;
-                }
-                void Promise.all([...files].map((file) => file.text())).then(
-                  (texts) => {
-                    const indexes = texts.map((text) =>
-                      parseBookingAccountingCsv(text),
-                    );
-                    const merged = mergeBookingAccountingIndexes(...indexes);
-                    setAccountingIndex(merged);
-                    const names = [...files].map((file) => file.name).join(", ");
-                    setAccountingFileLabel(names);
-                    const reservations = merged.byReservationId.size;
-                    setImportStatus(
-                      `Contabilità Booking caricata (${names}): ${reservations} numeri prenotazione nel file. ` +
-                        `Dopo l'estratto conto, il match usa il batch NO.xxx.`,
-                    );
-                  },
-                );
-              }}
-            />
-          </label>
         </div>
 
         <div className="mb-6 grid gap-3 md:grid-cols-3">

@@ -42,7 +42,9 @@ Apri `http://localhost:3000` → login con la password di team.
 3. Aggiungi le **stesse variabili d'ambiente** nel pannello Vercel
 4. Deploy
 
-Otterrai un link tipo `https://collection-hub.vercel.app` da condividere con il team.
+Otterrai un link Vercel del progetto **Next.js** (login, tab «Riconciliazione OTA»).
+
+**Importante:** se apri `https://collection-hub.vercel.app` e vedi solo una vecchia interfaccia (file `vite.svg`, senza tab Riconciliazione), quel dominio punta ancora a un deploy **Vite** obsoleto. In Vercel → progetto **collection-hub** (repo GitHub) → **Settings → Domains**, assegna il dominio al progetto Next.js e rimuovilo dal vecchio progetto. Fino ad allora usa l’URL **Production** mostrato nel pannello Vercel del progetto collegato a GitHub.
 
 ## 5. Uso quotidiano
 

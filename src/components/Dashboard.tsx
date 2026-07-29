@@ -204,6 +204,10 @@ export function Dashboard() {
             highlight
           />
           <Stat
+            label="Versione"
+            value={process.env.NEXT_PUBLIC_APP_VERSION ?? "—"}
+          />
+          <Stat
             label="Salvataggio"
             value={
               isCloud
