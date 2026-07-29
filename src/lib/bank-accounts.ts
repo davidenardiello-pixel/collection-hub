@@ -137,6 +137,8 @@ export interface IncomeChannelSummary {
   bankNet: number;
   cashTotal: number;
   grandNet: number;
+  /** Lordo ripartito sul periodo (somma piattaforme), allineato a netto/commissioni. */
+  allocatedGross: number;
 }
 
 export function getIncomeChannelSummary(
@@ -426,6 +428,11 @@ export function getIncomeChannelSummary(
   );
   const bankNet = accounts.reduce((total, account) => total + account.net, 0);
   const cashRounded = Math.round(cashTotal * 100) / 100;
+  const allocatedGross =
+    Math.round(
+      platformRows.reduce((total, platform) => total + platform.gross, 0) *
+        100,
+    ) / 100;
 
   return {
     accounts,
@@ -436,5 +443,6 @@ export function getIncomeChannelSummary(
     bankNet: Math.round(bankNet * 100) / 100,
     cashTotal: cashRounded,
     grandNet: Math.round((bankNet + cashRounded) * 100) / 100,
+    allocatedGross,
   };
 }

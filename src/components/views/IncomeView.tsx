@@ -121,6 +121,14 @@ export function IncomeView({
   );
   const showPropertySections = filters.propertyId === "all";
   const showMonthSections = filters.month === "all";
+  const monthFilterActive = filters.month !== "all";
+  const headerGross = monthFilterActive
+    ? channelSummary.allocatedGross
+    : filteredTotal;
+  const monthLabel =
+    monthFilterActive && typeof filters.month === "number"
+      ? MONTH_LABELS[filters.month - 1]
+      : null;
 
   return (
     <div className="space-y-6">
@@ -153,15 +161,37 @@ export function IncomeView({
         />
         <div className="mt-4 rounded-xl border border-rc-gold/20 bg-rc-charcoal/40 px-4 py-3 text-sm text-rc-muted">
           <strong className="text-rc-ink">{filteredBookings.length}</strong> di{" "}
-          {bookings.length} prenotazioni · Totale lordo{" "}
+          {bookings.length} prenotazioni
+          {monthLabel ? (
+            <>
+              {" "}
+              con pernotti a <strong className="text-rc-ink">{monthLabel}</strong>
+            </>
+          ) : null}
+          {" · "}
+          {monthFilterActive ? "Lordo quota mese" : "Totale lordo"}{" "}
           <span className="font-semibold text-rc-gold-light">
-            {formatCurrency(filteredTotal)}
+            {formatCurrency(headerGross)}
           </span>
+          {monthFilterActive && Math.abs(headerGross - filteredTotal) > 0.02 ? (
+            <span className="text-xs text-rc-muted">
+              {" "}
+              (intera prenotazione se non ripartita:{" "}
+              {formatCurrency(filteredTotal)})
+            </span>
+          ) : null}
           {" · "}
           Netto in banca{" "}
           <span className="font-semibold text-emerald-400">
             {formatCurrency(channelSummary.bankNet)}
           </span>
+          {monthFilterActive ? (
+            <span className="block mt-2 text-xs">
+              Stessa logica della tabella sotto: importi ripartiti per{" "}
+              <strong className="text-rc-ink">notti nel mese</strong> (non per
+              data bonifico OTA — vedi Riconciliazione OTA).
+            </span>
+          ) : null}
           {channelSummary.cashTotal > 0 ? (
             <>
               {" · "}
@@ -191,9 +221,15 @@ export function IncomeView({
       <IncomeChannelSummaryCard
         summary={channelSummary}
         subtitle={
-          activeFilterLabels.length > 0
-            ? `Filtrata: ${activeFilterLabels.join(" · ")}`
-            : undefined
+          monthFilterActive && monthLabel
+            ? `Quota ${monthLabel} ${FISCAL_YEAR} (pernotti nel mese · netto = lordo − commissioni OTA)${
+                activeFilterLabels.length > 0
+                  ? ` · ${activeFilterLabels.join(" · ")}`
+                  : ""
+              }`
+            : activeFilterLabels.length > 0
+              ? `Filtrata: ${activeFilterLabels.join(" · ")}`
+              : undefined
         }
       />
 

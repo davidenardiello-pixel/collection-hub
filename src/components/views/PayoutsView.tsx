@@ -172,11 +172,10 @@ export function PayoutsView({
     <div className="space-y-6">
       <Card title="Riconciliazione incassi OTA per azienda">
         <p className="mb-4 text-sm text-rc-muted">
-          Mese del <strong className="text-rc-ink">pagamento atteso</strong> (regole:
-          Booking = giovedì dopo il check-out; Airbnb/Vrbo = primo giorno lavorativo
-          dopo il check-in). Tutti gli importi sotto sono{" "}
-          <strong className="text-rc-ink">netti in banca</strong> (lordo prenotazione
-          + pulizie − commissione OTA). Gli accrediti CSV sono già al netto.
+          Mese del <strong className="text-rc-ink">pagamento atteso in banca</strong>{" "}
+          (regole: Booking = giovedì dopo il check-out; Airbnb/Vrbo = primo giorno
+          lavorativo dopo il check-in). Non coincide con la ripartizione per{" "}
+          <strong className="text-rc-ink">notti nel mese</strong> in Incassi.
         </p>
         <div className="mb-4 flex flex-wrap gap-2">
           {BANK_ACCOUNT_OPTIONS.map((option) => (
