@@ -241,6 +241,9 @@ export function normalizeDashboardData(
       : [],
     bankPayouts,
     reconciliationDataVersion: RECONCILIATION_DATA_VERSION,
+    cleaningForecastSuppressed: Array.isArray(raw?.cleaningForecastSuppressed)
+      ? raw.cleaningForecastSuppressed
+      : [],
   };
 
   return pruneStaleRentKrossAutomation(

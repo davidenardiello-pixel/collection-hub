@@ -6,12 +6,16 @@ import {
   getAutomationPreview,
   type AutomationPreview,
 } from "@/lib/automation";
+import {
+  listCleaningForecastByPropertyMonth,
+} from "@/lib/booking-cleaning";
 import { formatCurrency } from "@/lib/calculations";
-import { FISCAL_YEAR } from "@/lib/constants";
+import { FISCAL_YEAR, MONTH_LABELS } from "@/lib/constants";
 import type {
   AutomationSettings,
   Booking,
   DashboardData,
+  MonthPeriod,
   Property,
 } from "@/lib/types";
 import { Button, Card, Field, Input } from "./ui";
@@ -23,6 +27,8 @@ export function AutomationPanel({
   onUpdateAutomation,
   onUpdatePropertyAutomation,
   onSyncAutomatedExpenses,
+  onDismissCleaningForecast,
+  onRestoreCleaningForecast,
   onMessage,
 }: {
   data: DashboardData;
@@ -35,10 +41,16 @@ export function AutomationPanel({
     krossBookingMonthly: number,
   ) => void;
   onSyncAutomatedExpenses: () => AutomationPreview;
+  onDismissCleaningForecast: (propertyId: string, period: MonthPeriod) => void;
+  onRestoreCleaningForecast: (propertyId: string, period: MonthPeriod) => void;
   onMessage?: (text: string) => void;
 }) {
   const automation = data.automation;
   const preview = useMemo(() => getAutomationPreview(data), [data]);
+  const cleaningForecastRows = useMemo(
+    () => listCleaningForecastByPropertyMonth(data),
+    [data],
+  );
 
   function handleSync() {
     const result = onSyncAutomatedExpenses();
@@ -145,6 +157,108 @@ export function AutomationPanel({
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Button onClick={handleSync}>Genera / aggiorna spese automatiche</Button>
+      </div>
+
+      <div className="mt-8 rounded-xl border border-rc-gold/25 bg-rc-charcoal/50 p-4">
+        <p className="font-semibold text-rc-gold-light">
+          Pulizie check-in (forecast) per mese e appartamento
+        </p>
+        <p className="mt-2 text-sm text-rc-muted">
+          Le voci automatiche collegate alle prenotazioni sono un forecast: a fine
+          mese puoi annullarle in blocco e registrare in Spese i costi reali
+          (pulizie extra, prodotti, ecc.) senza toccare le prenotazioni.
+          L&apos;annullamento impedisce che si rigenerino con
+          &quot;Genera / aggiorna&quot;.
+        </p>
+
+        {cleaningForecastRows.length === 0 ? (
+          <p className="mt-4 text-sm text-rc-muted">
+            Nessun check-in con pulizie automatiche in FY{FISCAL_YEAR}.
+          </p>
+        ) : (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-rc-gold/20 text-xs uppercase text-rc-muted">
+                  <th className="px-2 py-2">Mese</th>
+                  <th className="px-2 py-2">Appartamento</th>
+                  <th className="px-2 py-2 text-center">Check-in</th>
+                  <th className="px-2 py-2 text-center">Voci auto</th>
+                  <th className="px-2 py-2 text-right">Totale</th>
+                  <th className="px-2 py-2">Stato</th>
+                  <th className="px-2 py-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {cleaningForecastRows.map((row) => {
+                  const period: MonthPeriod = {
+                    year: row.year,
+                    month: row.month,
+                  };
+                  return (
+                    <tr
+                      key={`${row.propertyId}-${row.month}`}
+                      className="border-b border-rc-gold/10"
+                    >
+                      <td className="px-2 py-2">
+                        {MONTH_LABELS[row.month - 1]}
+                      </td>
+                      <td className="px-2 py-2">{row.propertyName}</td>
+                      <td className="px-2 py-2 text-center">
+                        {row.checkInCount}
+                      </td>
+                      <td className="px-2 py-2 text-center">
+                        {row.linkedCleaningCount}
+                      </td>
+                      <td className="px-2 py-2 text-right">
+                        {formatCurrency(row.linkedCleaningTotal)}
+                      </td>
+                      <td className="px-2 py-2 text-xs text-rc-muted">
+                        {row.suppressed ? "Forecast annullato" : "Attivo"}
+                      </td>
+                      <td className="px-2 py-2">
+                        {row.suppressed ? (
+                          <Button
+                            variant="secondary"
+                            className="text-xs"
+                            onClick={() => {
+                              onRestoreCleaningForecast(row.propertyId, period);
+                              onMessage?.(
+                                `Forecast pulizie ripristinato — ${row.propertyName}, ${MONTH_LABELS[row.month - 1]}.`,
+                              );
+                            }}
+                          >
+                            Rigenera forecast
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            className="text-xs"
+                            onClick={() => {
+                              if (
+                                !window.confirm(
+                                  `Annullare le pulizie automatiche (forecast) per ${row.propertyName} in ${MONTH_LABELS[row.month - 1]}? Le prenotazioni restano invariate.`,
+                                )
+                              ) {
+                                return;
+                              }
+                              onDismissCleaningForecast(row.propertyId, period);
+                              onMessage?.(
+                                `Forecast pulizie annullato — ${row.propertyName}, ${MONTH_LABELS[row.month - 1]}. Aggiungi i costi reali in Spese.`,
+                              );
+                            }}
+                          >
+                            Annulla forecast
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <p className="mt-3 text-xs text-rc-muted">

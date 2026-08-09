@@ -6,7 +6,11 @@ import {
   syncAutomatedExpenses,
   type AutomationPreview,
 } from "@/lib/automation";
-import { resyncPropertyBookingCleaningExpenses } from "@/lib/booking-cleaning";
+import {
+  dismissCleaningForecastForPropertyMonth,
+  resyncPropertyBookingCleaningExpenses,
+  restoreCleaningForecastForPropertyMonth,
+} from "@/lib/booking-cleaning";
 import { normalizeBookingCommission } from "@/lib/booking-commission";
 import { applyExpectedPayoutFields } from "@/lib/ota-payout";
 import {
@@ -53,6 +57,7 @@ import type {
   Booking,
   DashboardData,
   Expense,
+  MonthPeriod,
 } from "@/lib/types";
 
 const SYNC_INTERVAL_MS = 20_000;
@@ -290,6 +295,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
             current.expenseCategories,
             current.platforms,
             current.properties,
+            current.cleaningForecastSuppressed,
           ),
         });
       });
@@ -332,6 +338,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
             current.expenseCategories,
             current.platforms,
             current.properties,
+            current.cleaningForecastSuppressed,
           ),
         });
       });
@@ -369,6 +376,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
             current.expenseCategories,
             current.platforms,
             current.properties,
+            current.cleaningForecastSuppressed,
           ),
         });
       });
@@ -831,6 +839,24 @@ export function useCloudDashboardStorage(enabled: boolean) {
     return preview;
   }, [persist]);
 
+  const dismissCleaningForecast = useCallback(
+    (propertyId: string, period: MonthPeriod) => {
+      persist((current) =>
+        dismissCleaningForecastForPropertyMonth(current, propertyId, period),
+      );
+    },
+    [persist],
+  );
+
+  const restoreCleaningForecast = useCallback(
+    (propertyId: string, period: MonthPeriod) => {
+      persist((current) =>
+        restoreCleaningForecastForPropertyMonth(current, propertyId, period),
+      );
+    },
+    [persist],
+  );
+
   const importBookingCom = useCallback(
     async (
       propertyId: string,
@@ -1192,6 +1218,8 @@ export function useCloudDashboardStorage(enabled: boolean) {
     updateAutomation,
     updatePropertyAutomation,
     syncAutomation,
+    dismissCleaningForecast,
+    restoreCleaningForecast,
     importBookingCom,
     importAirbnb,
     resetToSeed,

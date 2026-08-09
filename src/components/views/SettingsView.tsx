@@ -21,6 +21,7 @@ import type {
   Expense,
   ExpenseCategory,
   Platform,
+  MonthPeriod,
   Property,
   PropertyCityId,
 } from "@/lib/types";
@@ -57,6 +58,8 @@ export function SettingsView({
   onUpdateAutomation,
   onUpdatePropertyAutomation,
   onSyncAutomatedExpenses,
+  onDismissCleaningForecast,
+  onRestoreCleaningForecast,
   onImportBookingCom,
   onImportAirbnb,
 }: {
@@ -100,6 +103,8 @@ export function SettingsView({
     krossBookingMonthly: number,
   ) => void;
   onSyncAutomatedExpenses: () => import("@/lib/automation").AutomationPreview;
+  onDismissCleaningForecast: (propertyId: string, period: MonthPeriod) => void;
+  onRestoreCleaningForecast: (propertyId: string, period: MonthPeriod) => void;
   onImportBookingCom: (
     propertyId: string,
     file: File,
@@ -203,6 +208,8 @@ export function SettingsView({
           showResult(null, "Configurazione appartamento aggiornata.");
         }}
         onSyncAutomatedExpenses={onSyncAutomatedExpenses}
+        onDismissCleaningForecast={onDismissCleaningForecast}
+        onRestoreCleaningForecast={onRestoreCleaningForecast}
         onMessage={(text) => showResult(null, text)}
       />
 

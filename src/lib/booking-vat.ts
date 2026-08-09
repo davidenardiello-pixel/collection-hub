@@ -183,6 +183,7 @@ export function upsertAllBookingLinkedExpenses(
   categories: ExpenseCategory[],
   platforms: Platform[],
   properties: Property[],
+  cleaningForecastSuppressed?: string[],
 ): Expense[] {
   if (booking.importedFromExcel || booking.legacyIncomeAttribution) {
     return removeAllBookingLinkedExpenses(expenses, booking.id);
@@ -195,7 +196,12 @@ export function upsertAllBookingLinkedExpenses(
     platforms,
   );
 
-  next = upsertCleaningExpense(next, booking, properties);
+  next = upsertCleaningExpense(
+    next,
+    booking,
+    properties,
+    cleaningForecastSuppressed,
+  );
 
   if (!shouldGenerateLinkedVat(booking)) {
     return removeVatExpensesForBooking(next, booking.id);

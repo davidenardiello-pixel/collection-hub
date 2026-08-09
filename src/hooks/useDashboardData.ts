@@ -73,6 +73,8 @@ export function useDashboardData() {
       updateAutomation: local.updateAutomation,
       updatePropertyAutomation: local.updatePropertyAutomation,
       syncAutomation: local.syncAutomation,
+      dismissCleaningForecast: local.dismissCleaningForecast,
+      restoreCleaningForecast: local.restoreCleaningForecast,
       importBookingCom: local.importBookingCom,
       importAirbnb: local.importAirbnb,
       resetToSeed: local.resetToSeed,

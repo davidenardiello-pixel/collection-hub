@@ -67,6 +67,8 @@ export function Dashboard() {
     updateAutomation,
     updatePropertyAutomation,
     syncAutomation,
+    dismissCleaningForecast,
+    restoreCleaningForecast,
     importBookingCom,
     importAirbnb,
     bankPayouts,
@@ -315,6 +317,8 @@ export function Dashboard() {
             onUpdateAutomation={updateAutomation}
             onUpdatePropertyAutomation={updatePropertyAutomation}
             onSyncAutomatedExpenses={syncAutomation}
+            onDismissCleaningForecast={dismissCleaningForecast}
+            onRestoreCleaningForecast={restoreCleaningForecast}
             onImportBookingCom={importBookingCom}
             onImportAirbnb={importAirbnb}
           />

@@ -125,6 +125,11 @@ export interface DashboardData {
   bankPayouts?: BankPayoutReceived[];
   /** Incrementato quando cambia il modello riconciliazione (es. reset bonifici importati). */
   reconciliationDataVersion?: number;
+  /**
+   * Mesi per cui le pulizie automatiche collegate ai check-in sono state
+   * annullate (forecast). Chiave: `propertyId:YYYY-MM`.
+   */
+  cleaningForecastSuppressed?: string[];
 }
 
 export type ViewId =

@@ -6,7 +6,11 @@ import {
   syncAutomatedExpenses,
   type AutomationPreview,
 } from "@/lib/automation";
-import { resyncPropertyBookingCleaningExpenses } from "@/lib/booking-cleaning";
+import {
+  dismissCleaningForecastForPropertyMonth,
+  resyncPropertyBookingCleaningExpenses,
+  restoreCleaningForecastForPropertyMonth,
+} from "@/lib/booking-cleaning";
 import { normalizeBookingCommission } from "@/lib/booking-commission";
 import { applyExpectedPayoutFields } from "@/lib/ota-payout";
 import {
@@ -54,6 +58,7 @@ import type {
   Booking,
   DashboardData,
   Expense,
+  MonthPeriod,
 } from "@/lib/types";
 
 const LEGACY_STORAGE_KEYS = [
@@ -140,6 +145,7 @@ export function useLocalDashboardStorage() {
             current.expenseCategories,
             current.platforms,
             current.properties,
+            current.cleaningForecastSuppressed,
           ),
         });
       });
@@ -178,6 +184,7 @@ export function useLocalDashboardStorage() {
             current.expenseCategories,
             current.platforms,
             current.properties,
+            current.cleaningForecastSuppressed,
           ),
         });
       });
@@ -211,6 +218,7 @@ export function useLocalDashboardStorage() {
             current.expenseCategories,
             current.platforms,
             current.properties,
+            current.cleaningForecastSuppressed,
           ),
         });
       });
@@ -657,6 +665,24 @@ export function useLocalDashboardStorage() {
     return preview;
   }, [persist]);
 
+  const dismissCleaningForecast = useCallback(
+    (propertyId: string, period: MonthPeriod) => {
+      persist((current) =>
+        dismissCleaningForecastForPropertyMonth(current, propertyId, period),
+      );
+    },
+    [persist],
+  );
+
+  const restoreCleaningForecast = useCallback(
+    (propertyId: string, period: MonthPeriod) => {
+      persist((current) =>
+        restoreCleaningForecastForPropertyMonth(current, propertyId, period),
+      );
+    },
+    [persist],
+  );
+
   const importBookingCom = useCallback(
     async (
       propertyId: string,
@@ -968,6 +994,8 @@ export function useLocalDashboardStorage() {
     updateAutomation,
     updatePropertyAutomation,
     syncAutomation,
+    dismissCleaningForecast,
+    restoreCleaningForecast,
     importBookingCom,
     importAirbnb,
     resetToSeed,
