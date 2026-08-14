@@ -14,8 +14,17 @@ import {
   getScopedPlatformBreakdown,
 } from "@/lib/calculations";
 import { CHART_COLORS } from "@/lib/brand";
-import { PROPERTY_CITIES } from "@/lib/constants";
+import {
+  FISCAL_YEAR,
+  MONTH_LABELS,
+  OCCUPANCY_METRICS_START_MONTH,
+  PROPERTY_CITIES,
+} from "@/lib/constants";
 import { filterPropertiesByCity } from "@/lib/property-cities";
+import {
+  getPropertyMonthOccupancy,
+  occupancyMetricsAvailable,
+} from "@/lib/occupancy";
 import type {
   Booking,
   Expense,
@@ -25,11 +34,20 @@ import type {
   PropertyCityId,
 } from "@/lib/types";
 import { MonthlyTrendChart, RingGauge } from "../charts";
+import { PropertyOccupancyCalendar } from "../PropertyOccupancyCalendar";
 import {
   MonthlyVoiceMatrix,
   VoiceListTable,
 } from "../VoiceBreakdown";
 import { Card, DataRow, DataTable, KpiCard, Money, TabPill } from "../ui";
+
+function defaultOccupancyMonth(): number {
+  const now = new Date();
+  if (now.getFullYear() === FISCAL_YEAR) {
+    return Math.max(OCCUPANCY_METRICS_START_MONTH, now.getMonth() + 1);
+  }
+  return OCCUPANCY_METRICS_START_MONTH;
+}
 
 export function PropertyView({
   bookings,
@@ -50,6 +68,7 @@ export function PropertyView({
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | "all">(
     "all",
   );
+  const [occupancyMonth, setOccupancyMonth] = useState(defaultOccupancyMonth);
 
   const visibleProperties = useMemo(
     () => filterPropertiesByCity(properties, selectedCity),
@@ -169,6 +188,29 @@ export function PropertyView({
     );
   }, [scopedPropertyIds, expenses, expenseCategories, scopedExpenses]);
 
+  const occupancyPeriod = useMemo(
+    () => ({ year: FISCAL_YEAR, month: occupancyMonth }),
+    [occupancyMonth],
+  );
+
+  const showOccupancyCalendars = occupancyMetricsAvailable(occupancyMonth);
+
+  const singlePropertyId =
+    scopedPropertyIds.length === 1 ? scopedPropertyIds[0] : null;
+
+  const singlePropertyOccupancy = useMemo(() => {
+    if (!showOccupancyCalendars || !singlePropertyId) {
+      return null;
+    }
+
+    return getPropertyMonthOccupancy(bookings, occupancyPeriod, singlePropertyId);
+  }, [
+    bookings,
+    occupancyPeriod,
+    showOccupancyCalendars,
+    singlePropertyId,
+  ]);
+
   if (properties.length === 0) {
     return (
       <Card title="Proprietà">
@@ -223,6 +265,89 @@ export function PropertyView({
           ))}
         </div>
       </Card>
+
+      {showOccupancyCalendars ? (
+        <Card
+          title="Calendario occupazione"
+          subtitle={`${MONTH_LABELS[occupancyMonth - 1]} ${FISCAL_YEAR} — giorni occupati e liberi per check-in`}
+        >
+          <div className="mb-4 flex flex-wrap gap-2">
+            {MONTH_LABELS.map((label, index) => {
+              const month = index + 1;
+              if (!occupancyMetricsAvailable(month)) {
+                return null;
+              }
+
+              return (
+                <TabPill
+                  key={label}
+                  active={occupancyMonth === month}
+                  onClick={() => setOccupancyMonth(month)}
+                >
+                  {label}
+                </TabPill>
+              );
+            })}
+          </div>
+
+          {singlePropertyId && singlePropertyOccupancy ? (
+            <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-3">
+                <KpiCard
+                  label="Occupazione"
+                  value={formatPercent(singlePropertyOccupancy.occupancyRate)}
+                  hint={`${singlePropertyOccupancy.bookedNights} / ${singlePropertyOccupancy.daysInMonth} giorni`}
+                  tone="neutral"
+                  progress={singlePropertyOccupancy.occupancyRate}
+                  progressMax={1}
+                />
+                <KpiCard
+                  label="Giorni liberi"
+                  value={String(singlePropertyOccupancy.availableNights)}
+                  hint={`${singlePropertyOccupancy.potentialBookableDays} ancora occupabili`}
+                  tone="neutral"
+                />
+                <KpiCard
+                  label="Prezzo medio"
+                  value={formatCurrency(singlePropertyOccupancy.averageDailyRate)}
+                  hint="Lordo mese ÷ giorni occupati"
+                  tone="income"
+                />
+              </div>
+              <PropertyOccupancyCalendar
+                bookings={bookings}
+                period={occupancyPeriod}
+                propertyId={singlePropertyId}
+                propertyName={scopeLabel}
+              />
+            </div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {visibleProperties.map((property) => (
+                <div
+                  key={property.id}
+                  className="rounded-xl border border-rc-gold/20 bg-rc-charcoal/40 p-3"
+                >
+                  <PropertyOccupancyCalendar
+                    bookings={bookings}
+                    period={occupancyPeriod}
+                    propertyId={property.id}
+                    propertyName={property.name}
+                    compact
+                  />
+                  <button
+                    type="button"
+                    className="mt-2 text-xs text-rc-gold-light underline-offset-2 hover:underline"
+                    onClick={() => setSelectedPropertyId(property.id)}
+                  >
+                    Apri solo questo appartamento
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <KpiCard
