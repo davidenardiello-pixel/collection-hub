@@ -173,6 +173,44 @@ export function splitFreeDaysByReference(
   };
 }
 
+export function getMonthGridPadding(period: MonthPeriod): number {
+  const firstDate = parseDate(
+    formatDateIso(period.year, period.month, 1),
+  );
+  const weekday = firstDate.getDay();
+  return weekday === 0 ? 6 : weekday - 1;
+}
+
+export type DayOccupancyStatus = "occupied" | "free-future" | "free-past";
+
+export interface CalendarDayCell {
+  date: string;
+  day: number;
+  status: DayOccupancyStatus;
+  isToday: boolean;
+}
+
+export function buildPropertyMonthCalendar(
+  bookings: Booking[],
+  period: MonthPeriod,
+  propertyId: string,
+  referenceDate = new Date(),
+): CalendarDayCell[] {
+  const occupiedDates = getOccupiedDatesInPeriod(bookings, period, propertyId);
+  const todayIso = formatReferenceDateIso(referenceDate);
+
+  return getMonthCalendarDates(period).map((date) => ({
+    date,
+    day: Number(date.slice(8, 10)),
+    status: occupiedDates.has(date)
+      ? "occupied"
+      : date < todayIso
+        ? "free-past"
+        : "free-future",
+    isToday: date === todayIso,
+  }));
+}
+
 export interface PropertyMonthOccupancy {
   daysInMonth: number;
   bookedNights: number;

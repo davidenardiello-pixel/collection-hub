@@ -36,6 +36,7 @@ import {
   getPropertyMonthOccupancy,
   occupancyMetricsAvailable,
 } from "@/lib/occupancy";
+import { PropertyOccupancyCalendar } from "../PropertyOccupancyCalendar";
 import type {
   Booking,
   Expense,
@@ -449,6 +450,17 @@ export function MonthlyView({
             />
           </div>
 
+          <Card
+            title={`Calendario occupazione — ${selectedPropertyName}`}
+            subtitle={`${detail.label} ${FISCAL_YEAR}: giorni occupati e liberi (check-in → check-out)`}
+          >
+            <PropertyOccupancyCalendar
+              bookings={bookings}
+              period={monthPeriod}
+              propertyId={scopedPropertyId!}
+            />
+          </Card>
+
           <Card title="Finestre libere sul calendario">
             <p className="mb-4 text-sm text-rc-muted">
               Riferimento:{" "}
@@ -724,6 +736,37 @@ export function MonthlyView({
               ) : null}
             </DataRow>
           </DataTable>
+        </Card>
+      ) : null}
+
+      {showOccupancyMetrics && selectedPropertyId === "all" ? (
+        <Card
+          title={`Calendario occupazione per appartamento — ${detail.label}`}
+          subtitle="Clicca un appartamento sopra per il dettaglio KPI; qui vedi tutti i calendari del mese."
+        >
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            {propertiesMonthBreakdown.map((property) => (
+              <div
+                key={property.id}
+                className="rounded-xl border border-rc-gold/20 bg-rc-charcoal/40 p-3"
+              >
+                <PropertyOccupancyCalendar
+                  bookings={bookings}
+                  period={monthPeriod}
+                  propertyId={property.id}
+                  propertyName={property.name}
+                  compact
+                />
+                <button
+                  type="button"
+                  className="mt-2 text-xs text-rc-gold-light underline-offset-2 hover:underline"
+                  onClick={() => setSelectedPropertyId(property.id)}
+                >
+                  Apri dettaglio
+                </button>
+              </div>
+            ))}
+          </div>
         </Card>
       ) : null}
 
