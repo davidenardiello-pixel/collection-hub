@@ -269,7 +269,7 @@ export function PropertyView({
       {showOccupancyCalendars ? (
         <Card
           title="Calendario occupazione"
-          subtitle={`${MONTH_LABELS[occupancyMonth - 1]} ${FISCAL_YEAR} — giorni occupati e liberi per check-in`}
+            subtitle={`${MONTH_LABELS[occupancyMonth - 1]} ${FISCAL_YEAR} — notti reali check-in → check-out (anche se l'incasso è in altro mese)`}
         >
           <div className="mb-4 flex flex-wrap gap-2">
             {MONTH_LABELS.map((label, index) => {
@@ -310,7 +310,7 @@ export function PropertyView({
                 <KpiCard
                   label="Prezzo medio"
                   value={formatCurrency(singlePropertyOccupancy.averageDailyRate)}
-                  hint="Lordo mese ÷ giorni occupati"
+                  hint="Lordo ripartito sulle notti del mese ÷ giorni occupati"
                   tone="income"
                 />
               </div>

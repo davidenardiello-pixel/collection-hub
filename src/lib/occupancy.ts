@@ -1,8 +1,8 @@
 import {
-  bookingAppliesToPeriod,
+  countBookingNightsInCalendarPeriod,
   getOccupiedCalendarDatesInPeriod,
 } from "./booking-allocation";
-import { parseDate, sumBookingsInPeriod } from "./calculations";
+import { getBookingNights, getBookingTotal, parseDate, sumBookingsInPeriod } from "./calculations";
 import { OCCUPANCY_METRICS_START_MONTH } from "./constants";
 import type { Booking, MonthPeriod } from "./types";
 
@@ -58,10 +58,6 @@ export function getOccupiedDatesInPeriod(
       continue;
     }
 
-    if (!bookingAppliesToPeriod(booking, period)) {
-      continue;
-    }
-
     for (const date of getOccupiedCalendarDatesInPeriod(booking, period)) {
       occupiedDates.add(date);
     }
@@ -71,8 +67,39 @@ export function getOccupiedDatesInPeriod(
 }
 
 /**
- * Occupazione = stesse prenotazioni visibili in Incassi per il mese (competenza),
- * con date check-in → check-out sul calendario. Giorni unici (no doppio conteggio).
+ * Lordo ripartito sulle notti di calendario nel mese (non competenza check-in).
+ * Usato per ADR coerente con i giorni occupati mostrati in calendario.
+ */
+export function sumBookingGrossForCalendarMonth(
+  bookings: Booking[],
+  period: MonthPeriod,
+  propertyId?: string,
+): number {
+  let total = 0;
+
+  for (const booking of bookings) {
+    if (propertyId && booking.propertyId !== propertyId) {
+      continue;
+    }
+
+    if (!isOccupancyEligibleBooking(booking)) {
+      continue;
+    }
+
+    const nightsInMonth = countBookingNightsInCalendarPeriod(booking, period);
+    const totalNights = getBookingNights(booking);
+    if (nightsInMonth <= 0 || totalNights <= 0) {
+      continue;
+    }
+
+    total += getBookingTotal(booking) * (nightsInMonth / totalNights);
+  }
+
+  return Math.round(total * 100) / 100;
+}
+
+/**
+ * Occupazione sul calendario: notti reali check-in → check-out nel mese visualizzato.
  */
 export function countUniqueOccupiedDaysInPeriod(
   bookings: Booking[],
@@ -242,9 +269,15 @@ export function getPropertyMonthOccupancy(
     (booking) => booking.propertyId === propertyId,
   );
   const grossIncome = sumBookingsInPeriod(propertyBookings, period);
+  const calendarGross = sumBookingGrossForCalendarMonth(
+    bookings,
+    period,
+    propertyId,
+  );
   const availableNights = Math.max(0, daysInMonth - bookedNights);
   const occupancyRate = daysInMonth > 0 ? bookedNights / daysInMonth : 0;
-  const averageDailyRate = bookedNights > 0 ? grossIncome / bookedNights : 0;
+  const averageDailyRate =
+    bookedNights > 0 ? calendarGross / bookedNights : 0;
 
   const {
     pastFreeDays,

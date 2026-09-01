@@ -445,14 +445,14 @@ export function MonthlyView({
             <KpiCard
               label="Prezzo medio vendita"
               value={formatCurrency(propertyOccupancy.averageDailyRate)}
-              hint="Lordo del mese ÷ giorni occupati"
+              hint="Lordo ripartito sulle notti del mese (calendario) ÷ giorni occupati"
               tone="income"
             />
           </div>
 
           <Card
             title={`Calendario occupazione — ${selectedPropertyName}`}
-            subtitle={`${detail.label} ${FISCAL_YEAR}: giorni occupati e liberi (check-in → check-out)`}
+            subtitle={`${detail.label} ${FISCAL_YEAR}: notti reali check-in → check-out (anche se l'incasso è in altro mese)`}
           >
             <PropertyOccupancyCalendar
               bookings={bookings}
