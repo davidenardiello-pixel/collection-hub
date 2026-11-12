@@ -1,5 +1,6 @@
 import {
   DEFAULT_AUTOMATION_SETTINGS,
+  ensureElapsedRentKrossAutomation,
   pruneStaleRentKrossAutomation,
 } from "./automation";
 import {
@@ -246,10 +247,12 @@ export function normalizeDashboardData(
       : [],
   };
 
-  return pruneStaleRentKrossAutomation(
-    deduplicateOverlappingExpenses(
-      syncMissingBookingVat(
-        syncMissingBookingCleaning(syncMissingBookingCommissions(normalized)),
+  return ensureElapsedRentKrossAutomation(
+    pruneStaleRentKrossAutomation(
+      deduplicateOverlappingExpenses(
+        syncMissingBookingVat(
+          syncMissingBookingCleaning(syncMissingBookingCommissions(normalized)),
+        ),
       ),
     ),
   );

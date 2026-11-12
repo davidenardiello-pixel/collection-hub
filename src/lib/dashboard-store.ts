@@ -1,3 +1,4 @@
+import { countRentKrossAutomatedExpenses } from "./automation";
 import { normalizeDashboardData } from "./migrate";
 import { resyncAirbnbOtaBookings } from "./ota-import/airbnb";
 import { createSeedData } from "./seed";
@@ -73,7 +74,11 @@ export async function loadDashboardFromStore(): Promise<{
 
   const normalized = normalizeDashboardData(payload);
 
-  if (bookingsNeedAirbnbResync(payload)) {
+  const rentKrossRepaired =
+    countRentKrossAutomatedExpenses(normalized.expenses) >
+    countRentKrossAutomatedExpenses(payload.expenses ?? []);
+
+  if (bookingsNeedAirbnbResync(payload) || rentKrossRepaired) {
     return saveDashboardToStore(normalized);
   }
 
