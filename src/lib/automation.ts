@@ -61,6 +61,14 @@ function isRentOrKrossAutomationId(automationId: string | undefined): boolean {
   );
 }
 
+export function countRentKrossAutomatedExpenses(expenses: Expense[]): number {
+  return expenses.filter(
+    (expense) =>
+      isAutomatedExpense(expense) &&
+      isRentOrKrossAutomationId(expense.automationId),
+  ).length;
+}
+
 function automationMonth(automationId: string): number | null {
   const match = automationId.match(/:(\d{4})-(\d{2})$/);
   return match ? Number(match[2]) : null;
