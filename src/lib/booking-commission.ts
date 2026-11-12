@@ -2,6 +2,7 @@ import {
   getFiscalBookingAllocations,
   monthEndDate,
 } from "./booking-allocation";
+import { isBookingLinkedExpenseSuppressed } from "./expense-removal";
 import { hasManualCommissionInMonth } from "./expense-dedup";
 import type {
   Booking,
@@ -62,10 +63,21 @@ export function buildCommissionExpenses(
   platforms: Platform[],
   categories: ExpenseCategory[],
   expenses: Expense[] = [],
+  linkedSuppressed?: string[],
 ): Omit<Expense, "id">[] {
   const commission = Math.max(0, Number(booking.otaCommission) || 0);
 
   if (commission <= 0) {
+    return [];
+  }
+
+  if (
+    isBookingLinkedExpenseSuppressed(
+      booking.id,
+      "commission",
+      linkedSuppressed,
+    )
+  ) {
     return [];
   }
 
@@ -101,6 +113,7 @@ export function upsertCommissionExpense(
   booking: Booking,
   categories: ExpenseCategory[],
   platforms: Platform[],
+  linkedSuppressed?: string[],
 ): Expense[] {
   const withoutLinked = expenses.filter(
     (expense) =>
@@ -114,6 +127,7 @@ export function upsertCommissionExpense(
     platforms,
     categories,
     withoutLinked,
+    linkedSuppressed,
   );
 
   if (built.length === 0) {
@@ -172,6 +186,7 @@ export function syncMissingBookingCommissions(
       booking,
       data.expenseCategories,
       data.platforms,
+      data.bookingLinkedExpenseSuppressed,
     );
   }
 

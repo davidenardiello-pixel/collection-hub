@@ -1,4 +1,5 @@
 import { monthEndDate } from "./booking-allocation";
+import { isBookingLinkedExpenseSuppressed } from "./expense-removal";
 import { getPeriodFromDate } from "./calculations";
 import { FISCAL_YEAR } from "./constants";
 import type {
@@ -102,13 +103,20 @@ export function bookingsForCleaningForecastMonth(
 export function buildCleaningExpenses(
   booking: Booking,
   properties: Property[],
-  suppressed?: string[],
+  forecastSuppressed?: string[],
+  linkedSuppressed?: string[],
 ): Omit<Expense, "id">[] {
   if (!bookingEligibleForAutoCleaning(booking)) {
     return [];
   }
 
-  if (isCleaningForecastSuppressedForBooking(booking, suppressed)) {
+  if (isCleaningForecastSuppressedForBooking(booking, forecastSuppressed)) {
+    return [];
+  }
+
+  if (
+    isBookingLinkedExpenseSuppressed(booking.id, "cleaning", linkedSuppressed)
+  ) {
     return [];
   }
 
@@ -139,7 +147,8 @@ export function upsertCleaningExpense(
   expenses: Expense[],
   booking: Booking,
   properties: Property[],
-  suppressed?: string[],
+  forecastSuppressed?: string[],
+  linkedSuppressed?: string[],
 ): Expense[] {
   const withoutCleaning = expenses.filter(
     (expense) =>
@@ -148,7 +157,12 @@ export function upsertCleaningExpense(
         expense.linkedExpenseKind === "cleaning"
       ),
   );
-  const built = buildCleaningExpenses(booking, properties, suppressed);
+  const built = buildCleaningExpenses(
+    booking,
+    properties,
+    forecastSuppressed,
+    linkedSuppressed,
+  );
 
   if (built.length === 0) {
     return withoutCleaning;
@@ -252,6 +266,7 @@ export function restoreCleaningForecastForPropertyMonth(
       booking,
       data.properties,
       suppressedSet,
+      data.bookingLinkedExpenseSuppressed,
     );
   }
 
@@ -343,6 +358,7 @@ export function resyncPropertyBookingCleaningExpenses(
       booking,
       data.properties,
       suppressed,
+      data.bookingLinkedExpenseSuppressed,
     );
   }
 
@@ -367,6 +383,7 @@ export function syncMissingBookingCleaning(data: DashboardData): DashboardData {
       booking,
       data.properties,
       suppressed,
+      data.bookingLinkedExpenseSuppressed,
     );
   }
 

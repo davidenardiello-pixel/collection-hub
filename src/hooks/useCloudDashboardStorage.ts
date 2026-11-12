@@ -12,6 +12,7 @@ import {
   restoreCleaningForecastForPropertyMonth,
 } from "@/lib/booking-cleaning";
 import { normalizeBookingCommission } from "@/lib/booking-commission";
+import { removeExpenseFromDashboard } from "@/lib/expense-removal";
 import { applyExpectedPayoutFields } from "@/lib/ota-payout";
 import {
   removeAllBookingLinkedExpenses,
@@ -296,6 +297,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
             current.platforms,
             current.properties,
             current.cleaningForecastSuppressed,
+            current.bookingLinkedExpenseSuppressed,
           ),
         });
       });
@@ -339,6 +341,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
             current.platforms,
             current.properties,
             current.cleaningForecastSuppressed,
+            current.bookingLinkedExpenseSuppressed,
           ),
         });
       });
@@ -377,6 +380,7 @@ export function useCloudDashboardStorage(enabled: boolean) {
             current.platforms,
             current.properties,
             current.cleaningForecastSuppressed,
+            current.bookingLinkedExpenseSuppressed,
           ),
         });
       });
@@ -449,10 +453,13 @@ export function useCloudDashboardStorage(enabled: boolean) {
 
   const removeExpense = useCallback(
     (id: string) => {
-      persist((current) => ({
-        ...current,
-        expenses: current.expenses.filter((expense) => expense.id !== id),
-      }));
+      persist((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return removeExpenseFromDashboard(current, id);
+      });
     },
     [persist],
   );

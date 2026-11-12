@@ -264,8 +264,10 @@ export function AutomationPanel({
       <p className="mt-3 text-xs text-rc-muted">
         Affitto e KrossBooking si generano per ogni mese già trascorso
         nell&apos;anno fiscale (ottobre resta visibile anche a novembre); i mesi
-        futuri non vengono anticipati. Se in un mese hai già una spesa manuale
-        Affitto/Kross, l&apos;automatica non viene duplicata. Le pulizie
+        futuri non vengono anticipati. Se elimini una voce Auto in Spese, non
+        viene rigenerata (senza toccare gli incassi). Se in un mese hai già una
+        spesa manuale Affitto/Kross, l&apos;automatica non viene duplicata. Le
+        pulizie
         automatiche seguono i check-in. A ogni sincronizzazione le voci Auto
         vengono ricalcolate; le spese manuali restano invariate. FY
         {FISCAL_YEAR}.

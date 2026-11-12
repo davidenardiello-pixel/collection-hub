@@ -290,6 +290,7 @@ export function syncAirbnbReservations(
       data.platforms,
       data.properties,
       data.cleaningForecastSuppressed,
+      data.bookingLinkedExpenseSuppressed,
     );
   }
 
