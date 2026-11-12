@@ -66,7 +66,10 @@ function automationMonth(automationId: string): number | null {
   return match ? Number(match[2]) : null;
 }
 
-/** Affitto e Kross solo sul mese corrente: niente pregresso Excel né mesi futuri. */
+/**
+ * Rimuove affitto/Kross automatici solo per mesi futuri (oltre il mese trascorso).
+ * I mesi già chiusi restano nello storico.
+ */
 export function pruneStaleRentKrossAutomation(
   data: DashboardData,
   referenceDate = new Date(),
@@ -94,7 +97,12 @@ export function pruneStaleRentKrossAutomation(
         return true;
       }
 
-      return automationMonth(expense.automationId ?? "") === currentMonth;
+      const month = automationMonth(expense.automationId ?? "");
+      if (month === null) {
+        return true;
+      }
+
+      return month <= currentMonth;
     }),
   };
 }
@@ -107,7 +115,6 @@ export function buildAutomatedExpenses(
   expenses: Expense[] = [],
 ): Omit<Expense, "id">[] {
   const results: Omit<Expense, "id">[] = [];
-  const currentMonth = getElapsedFiscalMonth();
 
   for (const property of properties) {
     const krossMonthly = property.krossBookingMonthly ?? 0;
@@ -121,8 +128,7 @@ export function buildAutomatedExpenses(
 
       if (
         automation.autoRent &&
-        currentMonth > 0 &&
-        period.month === currentMonth &&
+        throughMonth > 0 &&
         property.monthlyRent > 0 &&
         !hasManualCategoryInMonth(expenses, property.id, "affitto", period)
       ) {
@@ -144,8 +150,7 @@ export function buildAutomatedExpenses(
 
       if (
         automation.autoKrossBooking &&
-        currentMonth > 0 &&
-        period.month === currentMonth &&
+        throughMonth > 0 &&
         krossMonthly > 0 &&
         !hasManualCategoryInMonth(
           expenses,
@@ -174,6 +179,61 @@ export function buildAutomatedExpenses(
   }
 
   return results;
+}
+
+/** Aggiunge affitto/Kross mancanti per i mesi già trascorsi (es. dopo cambio mese). */
+export function ensureElapsedRentKrossAutomation(
+  data: DashboardData,
+  referenceDate = new Date(),
+): DashboardData {
+  const automation = data.automation ?? DEFAULT_AUTOMATION_SETTINGS;
+
+  if (!automation.autoRent && !automation.autoKrossBooking) {
+    return data;
+  }
+
+  const throughMonth = getElapsedFiscalMonth(referenceDate);
+  if (throughMonth <= 0) {
+    return data;
+  }
+
+  const generated = buildAutomatedExpenses(
+    data.bookings,
+    data.properties,
+    automation,
+    throughMonth,
+    data.expenses,
+  );
+
+  const existingAutoIds = new Set(
+    data.expenses
+      .filter(
+        (expense) =>
+          isAutomatedExpense(expense) &&
+          isRentOrKrossAutomationId(expense.automationId),
+      )
+      .map((expense) => expense.automationId)
+      .filter(Boolean),
+  );
+
+  const missing = generated.filter(
+    (expense) => !existingAutoIds.has(expense.automationId),
+  );
+
+  if (missing.length === 0) {
+    return data;
+  }
+
+  return {
+    ...data,
+    expenses: [
+      ...data.expenses,
+      ...missing.map((expense) => ({
+        ...expense,
+        id: crypto.randomUUID(),
+      })),
+    ],
+  };
 }
 
 export function getAutomationPreview(data: DashboardData): AutomationPreview {
@@ -257,10 +317,16 @@ export function syncAutomatedExpenses(data: DashboardData): {
     automation,
     getElapsedFiscalMonth(),
     data.expenses,
-  ).map((expense) => ({
-    ...expense,
-    id: crypto.randomUUID(),
-  }));
+  ).map((expense) => {
+    const existing = data.expenses.find(
+      (item) => item.automationId === expense.automationId,
+    );
+
+    return {
+      ...expense,
+      id: existing?.id ?? crypto.randomUUID(),
+    };
+  });
 
   const synced = syncMissingBookingCleaning({
     ...data,

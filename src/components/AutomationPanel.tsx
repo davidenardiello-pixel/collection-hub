@@ -85,7 +85,7 @@ export function AutomationPanel({
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         <AutomationToggle
           label="Affitto mensile"
-          description="Solo sul mese corrente (non pregresso né futuro)."
+          description="Una voce per ogni mese trascorso nell'anno (resta lo storico)."
           checked={automation.autoRent}
           onChange={(checked) =>
             onUpdateAutomation({ ...automation, autoRent: checked })
@@ -93,7 +93,7 @@ export function AutomationPanel({
         />
         <AutomationToggle
           label="KrossBooking"
-          description="Solo sul mese corrente (non pregresso né futuro)."
+          description="Una voce per ogni mese trascorso nell'anno (resta lo storico)."
           checked={automation.autoKrossBooking}
           onChange={(checked) =>
             onUpdateAutomation({ ...automation, autoKrossBooking: checked })
@@ -262,11 +262,13 @@ export function AutomationPanel({
       </div>
 
       <p className="mt-3 text-xs text-rc-muted">
-        Affitto e KrossBooking si generano solo nel mese corrente: il pregresso
-        resta quello del file rendita e i mesi futuri non vengono anticipati.
-        Le pulizie automatiche seguono invece i check-in dei mesi già
-        trascorsi. A ogni sincronizzazione le voci Auto vengono ricalcolate;
-        le spese manuali restano invariate. FY{FISCAL_YEAR}.
+        Affitto e KrossBooking si generano per ogni mese già trascorso
+        nell&apos;anno fiscale (ottobre resta visibile anche a novembre); i mesi
+        futuri non vengono anticipati. Se in un mese hai già una spesa manuale
+        Affitto/Kross, l&apos;automatica non viene duplicata. Le pulizie
+        automatiche seguono i check-in. A ogni sincronizzazione le voci Auto
+        vengono ricalcolate; le spese manuali restano invariate. FY
+        {FISCAL_YEAR}.
       </p>
     </Card>
   );
