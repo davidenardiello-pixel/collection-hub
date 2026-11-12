@@ -10,6 +10,7 @@ import {
   getMonthLabel,
 } from "./calculations";
 import { FISCAL_YEAR } from "./constants";
+import { isRentKrossAutomationSuppressed } from "./expense-removal";
 import type { Booking, DashboardData, Expense, Property } from "./types";
 
 export const AUTOMATION_PREFIX = "auto:";
@@ -121,6 +122,7 @@ export function buildAutomatedExpenses(
   automation: AutomationSettings,
   throughMonth = getElapsedFiscalMonth(),
   expenses: Expense[] = [],
+  suppressedAutomationIds: string[] = [],
 ): Omit<Expense, "id">[] {
   const results: Omit<Expense, "id">[] = [];
 
@@ -140,20 +142,28 @@ export function buildAutomatedExpenses(
         property.monthlyRent > 0 &&
         !hasManualCategoryInMonth(expenses, property.id, "affitto", period)
       ) {
-        results.push({
-          date: expenseDate,
-          propertyId: property.id,
-          categoryId: "affitto",
-          description: `Affitto automatico — ${monthLabel}`,
-          amount: roundAmount(property.monthlyRent),
-          automationId: buildAutomationId(
-            "rent",
-            property.id,
-            period.year,
-            period.month,
-          ),
-          notes: "Generato automaticamente",
-        });
+        const automationId = buildAutomationId(
+          "rent",
+          property.id,
+          period.year,
+          period.month,
+        );
+        if (
+          !isRentKrossAutomationSuppressed(
+            automationId,
+            suppressedAutomationIds,
+          )
+        ) {
+          results.push({
+            date: expenseDate,
+            propertyId: property.id,
+            categoryId: "affitto",
+            description: `Affitto automatico — ${monthLabel}`,
+            amount: roundAmount(property.monthlyRent),
+            automationId,
+            notes: "Generato automaticamente",
+          });
+        }
       }
 
       if (
@@ -167,20 +177,28 @@ export function buildAutomatedExpenses(
           period,
         )
       ) {
-        results.push({
-          date: expenseDate,
-          propertyId: property.id,
-          categoryId: "krossbooking",
-          description: `KrossBooking automatico — ${monthLabel}`,
-          amount: roundAmount(krossMonthly),
-          automationId: buildAutomationId(
-            "kross",
-            property.id,
-            period.year,
-            period.month,
-          ),
-          notes: "Generato automaticamente",
-        });
+        const automationId = buildAutomationId(
+          "kross",
+          property.id,
+          period.year,
+          period.month,
+        );
+        if (
+          !isRentKrossAutomationSuppressed(
+            automationId,
+            suppressedAutomationIds,
+          )
+        ) {
+          results.push({
+            date: expenseDate,
+            propertyId: property.id,
+            categoryId: "krossbooking",
+            description: `KrossBooking automatico — ${monthLabel}`,
+            amount: roundAmount(krossMonthly),
+            automationId,
+            notes: "Generato automaticamente",
+          });
+        }
       }
 
     }
@@ -211,6 +229,7 @@ export function ensureElapsedRentKrossAutomation(
     automation,
     throughMonth,
     data.expenses,
+    data.rentKrossAutomationSuppressed,
   );
 
   const existingAutoIds = new Set(
@@ -252,6 +271,7 @@ export function getAutomationPreview(data: DashboardData): AutomationPreview {
     automation,
     getElapsedFiscalMonth(),
     data.expenses,
+    data.rentKrossAutomationSuppressed,
   );
 
   let rentEntries = 0;
@@ -325,6 +345,7 @@ export function syncAutomatedExpenses(data: DashboardData): {
     automation,
     getElapsedFiscalMonth(),
     data.expenses,
+    data.rentKrossAutomationSuppressed,
   ).map((expense) => {
     const existing = data.expenses.find(
       (item) => item.automationId === expense.automationId,

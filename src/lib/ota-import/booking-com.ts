@@ -229,6 +229,7 @@ export function syncBookingComReservations(
       data.platforms,
       data.properties,
       data.cleaningForecastSuppressed,
+      data.bookingLinkedExpenseSuppressed,
     );
   }
 

@@ -130,6 +130,10 @@ export interface DashboardData {
    * annullate (forecast). Chiave: `propertyId:YYYY-MM`.
    */
   cleaningForecastSuppressed?: string[];
+  /** automationId affitto/Kross che l'utente ha eliminato e non va rigenerato. */
+  rentKrossAutomationSuppressed?: string[];
+  /** Chiavi `bookingId:commission|vat|cleaning` — spese collegate non rigenerare. */
+  bookingLinkedExpenseSuppressed?: string[];
 }
 
 export type ViewId =

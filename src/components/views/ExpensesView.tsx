@@ -10,8 +10,10 @@ import {
   sumExpenses,
 } from "@/lib/calculations";
 import { isAutomatedExpense } from "@/lib/automation";
+import { isLinkedCleaningExpense } from "@/lib/booking-cleaning";
 import { isLinkedCommissionExpense } from "@/lib/booking-commission";
 import { isLinkedVatExpense } from "@/lib/booking-vat";
+import { expenseDeleteConfirmMessage } from "@/lib/expense-removal";
 import { CHART_COLORS } from "@/lib/brand";
 import { FISCAL_YEAR, MONTH_LABELS, PROPERTY_CITIES } from "@/lib/constants";
 import {
@@ -214,9 +216,10 @@ export function ExpensesView({
                       ]}
                     >
                       {monthGroup.items.map((expense) => {
-                        const linkedToBooking =
+                        const linkedCommissionOrVat =
                           isLinkedCommissionExpense(expense) ||
                           isLinkedVatExpense(expense);
+                        const deleteConfirm = expenseDeleteConfirmMessage(expense);
 
                         return (
                           <DataRow key={expense.id}>
@@ -258,38 +261,55 @@ export function ExpensesView({
                                     Da incasso
                                   </span>
                                 ) : null}
+                                {isLinkedCleaningExpense(expense) ? (
+                                  <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-200">
+                                    Da check-in
+                                  </span>
+                                ) : null}
                               </span>
                             </td>
                             <td className="px-2 py-2 font-medium">
                               <Money value={expense.amount} />
                             </td>
                             <td className="px-2 py-2">
-                              {linkedToBooking ? (
-                                <span className="text-xs text-rc-muted">
-                                  Modifica dall&apos;incasso collegato
-                                </span>
-                              ) : (
-                                <div className="flex flex-wrap gap-1">
+                              <div className="flex flex-wrap gap-1">
+                                {!linkedCommissionOrVat ? (
                                   <Button
                                     variant="secondary"
                                     onClick={() => setEditing(expense)}
                                   >
                                     Modifica
                                   </Button>
-                                  <Button
-                                    variant="secondary"
-                                    onClick={() => onDuplicate(expense.id)}
-                                  >
-                                    Duplica
-                                  </Button>
-                                  <Button
-                                    variant="danger"
-                                    onClick={() => onRemove(expense.id)}
-                                  >
-                                    Elimina
-                                  </Button>
-                                </div>
-                              )}
+                                ) : null}
+                                <Button
+                                  variant="secondary"
+                                  onClick={() => onDuplicate(expense.id)}
+                                >
+                                  Duplica
+                                </Button>
+                                <Button
+                                  variant="danger"
+                                  onClick={() => {
+                                    if (
+                                      deleteConfirm &&
+                                      !window.confirm(deleteConfirm)
+                                    ) {
+                                      return;
+                                    }
+
+                                    onRemove(expense.id);
+                                  }}
+                                >
+                                  Elimina
+                                </Button>
+                              </div>
+                              {linkedCommissionOrVat ? (
+                                <p className="mt-1 text-[11px] text-rc-muted">
+                                  L&apos;incasso resta: per cambiare l&apos;importo
+                                  apri la prenotazione in Incassi.
+                                </p>
+                              ) : null}
+                            </td>
                             </td>
                           </DataRow>
                         );

@@ -245,6 +245,16 @@ export function normalizeDashboardData(
     cleaningForecastSuppressed: Array.isArray(raw?.cleaningForecastSuppressed)
       ? raw.cleaningForecastSuppressed
       : [],
+    rentKrossAutomationSuppressed: Array.isArray(
+      raw?.rentKrossAutomationSuppressed,
+    )
+      ? raw.rentKrossAutomationSuppressed
+      : [],
+    bookingLinkedExpenseSuppressed: Array.isArray(
+      raw?.bookingLinkedExpenseSuppressed,
+    )
+      ? raw.bookingLinkedExpenseSuppressed
+      : [],
   };
 
   return ensureElapsedRentKrossAutomation(

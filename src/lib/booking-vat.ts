@@ -10,6 +10,7 @@ import {
   removeCommissionExpensesForBooking,
   upsertCommissionExpense,
 } from "./booking-commission";
+import { isBookingLinkedExpenseSuppressed } from "./expense-removal";
 import { hasManualCategoryInMonth } from "./expense-dedup";
 import type {
   Booking,
@@ -82,10 +83,15 @@ export function buildVatExpenses(
   booking: Booking,
   platforms: Platform[],
   expenses: Expense[] = [],
+  linkedSuppressed?: string[],
 ): Omit<Expense, "id">[] {
   const vatTotal = calculateBookingVat(booking);
 
   if (vatTotal <= 0) {
+    return [];
+  }
+
+  if (isBookingLinkedExpenseSuppressed(booking.id, "vat", linkedSuppressed)) {
     return [];
   }
 
@@ -121,6 +127,7 @@ export function upsertVatExpense(
   expenses: Expense[],
   booking: Booking,
   platforms: Platform[],
+  linkedSuppressed?: string[],
 ): Expense[] {
   const withoutVat = expenses.filter(
     (expense) =>
@@ -129,7 +136,12 @@ export function upsertVatExpense(
         expense.linkedExpenseKind === "vat"
       ),
   );
-  const built = buildVatExpenses(booking, platforms, withoutVat);
+  const built = buildVatExpenses(
+    booking,
+    platforms,
+    withoutVat,
+    linkedSuppressed,
+  );
 
   if (built.length === 0) {
     return withoutVat;
@@ -184,6 +196,7 @@ export function upsertAllBookingLinkedExpenses(
   platforms: Platform[],
   properties: Property[],
   cleaningForecastSuppressed?: string[],
+  bookingLinkedExpenseSuppressed?: string[],
 ): Expense[] {
   if (booking.importedFromExcel || booking.legacyIncomeAttribution) {
     return removeAllBookingLinkedExpenses(expenses, booking.id);
@@ -194,6 +207,7 @@ export function upsertAllBookingLinkedExpenses(
     booking,
     categories,
     platforms,
+    bookingLinkedExpenseSuppressed,
   );
 
   next = upsertCleaningExpense(
@@ -201,13 +215,19 @@ export function upsertAllBookingLinkedExpenses(
     booking,
     properties,
     cleaningForecastSuppressed,
+    bookingLinkedExpenseSuppressed,
   );
 
   if (!shouldGenerateLinkedVat(booking)) {
     return removeVatExpensesForBooking(next, booking.id);
   }
 
-  return upsertVatExpense(next, booking, platforms);
+  return upsertVatExpense(
+    next,
+    booking,
+    platforms,
+    bookingLinkedExpenseSuppressed,
+  );
 }
 
 export function removeAllBookingLinkedExpenses(
@@ -236,7 +256,12 @@ export function syncMissingBookingVat(data: DashboardData): DashboardData {
       continue;
     }
 
-    expenses = upsertVatExpense(expenses, booking, data.platforms);
+    expenses = upsertVatExpense(
+      expenses,
+      booking,
+      data.platforms,
+      data.bookingLinkedExpenseSuppressed,
+    );
   }
 
   return {
