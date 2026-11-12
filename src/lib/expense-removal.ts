@@ -1,7 +1,8 @@
 import { isLinkedCleaningExpense } from "./booking-cleaning";
 import { isLinkedCommissionExpense } from "./booking-commission";
 import { isLinkedVatExpense } from "./booking-vat";
-import { isAutomatedExpense } from "./automation";
+import { buildAutomationId, isAutomatedExpense } from "./automation";
+import { getPeriodFromDate } from "./calculations";
 import type { DashboardData, Expense } from "./types";
 
 export type LinkedExpenseKind = "commission" | "vat" | "cleaning";
@@ -56,6 +57,49 @@ function appendUnique(list: string[], value: string): string[] {
   return [...list, value];
 }
 
+/** Chiave stabile anche se la spesa è stata creata senza automationId. */
+export function resolveRentKrossAutomationId(expense: Expense): string | null {
+  if (
+    expense.automationId &&
+    (expense.automationId.includes(":rent:") ||
+      expense.automationId.includes(":kross:"))
+  ) {
+    return expense.automationId;
+  }
+
+  const period = getPeriodFromDate(expense.date);
+  if (expense.categoryId === "affitto") {
+    return buildAutomationId(
+      "rent",
+      expense.propertyId,
+      period.year,
+      period.month,
+    );
+  }
+
+  if (expense.categoryId === "krossbooking") {
+    return buildAutomationId(
+      "kross",
+      expense.propertyId,
+      period.year,
+      period.month,
+    );
+  }
+
+  return null;
+}
+
+export function isRentKrossAutomatedExpense(expense: Expense): boolean {
+  if (isAutomatedExpense(expense)) {
+    return Boolean(
+      expense.automationId?.includes(":rent:") ||
+        expense.automationId?.includes(":kross:"),
+    );
+  }
+
+  return Boolean(resolveRentKrossAutomationId(expense));
+}
+
 export function removeExpenseFromDashboard(
   data: DashboardData,
   expenseId: string,
@@ -68,15 +112,11 @@ export function removeExpenseFromDashboard(
   let rentKrossAutomationSuppressed = data.rentKrossAutomationSuppressed ?? [];
   let bookingLinkedExpenseSuppressed = data.bookingLinkedExpenseSuppressed ?? [];
 
-  if (
-    isAutomatedExpense(expense) &&
-    expense.automationId &&
-    (expense.automationId.includes(":rent:") ||
-      expense.automationId.includes(":kross:"))
-  ) {
+  const rentKrossAutomationId = resolveRentKrossAutomationId(expense);
+  if (rentKrossAutomationId) {
     rentKrossAutomationSuppressed = appendUnique(
       rentKrossAutomationSuppressed,
-      expense.automationId,
+      rentKrossAutomationId,
     );
   }
 
@@ -110,12 +150,7 @@ export function removeExpenseFromDashboard(
 }
 
 export function expenseDeleteConfirmMessage(expense: Expense): string | null {
-  if (
-    isAutomatedExpense(expense) &&
-    expense.automationId &&
-    (expense.automationId.includes(":rent:") ||
-      expense.automationId.includes(":kross:"))
-  ) {
+  if (resolveRentKrossAutomationId(expense)) {
     return "Eliminare questa spesa automatica? L'incasso e le prenotazioni restano invariati. La voce non verrà rigenerata.";
   }
 

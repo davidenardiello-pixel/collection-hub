@@ -43,7 +43,7 @@ function monthEndDate(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 }
 
-function buildAutomationId(
+export function buildAutomationId(
   type: "rent" | "kross" | "cleaning",
   propertyId: string,
   year: number,
@@ -243,8 +243,12 @@ export function ensureElapsedRentKrossAutomation(
       .filter(Boolean),
   );
 
+  const suppressedSet = new Set(data.rentKrossAutomationSuppressed ?? []);
   const missing = generated.filter(
-    (expense) => !existingAutoIds.has(expense.automationId),
+    (expense) =>
+      expense.automationId &&
+      !existingAutoIds.has(expense.automationId) &&
+      !suppressedSet.has(expense.automationId),
   );
 
   if (missing.length === 0) {
